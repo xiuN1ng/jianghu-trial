@@ -196,6 +196,7 @@
   .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
   .cell.encounter.done { background-image: url("assets/tiles/walk.svg"); opacity: 0.85; }
   .cell.town { background-image: url("assets/tiles/town.svg"); }
+  .cell.gossip { background-image: url("assets/tiles/gossip.svg"); }
   .cell.gate {
     background-image: url("assets/tiles/walk.svg");
     box-shadow: inset 0 0 0 2px rgba(184, 134, 11, 0.55);
@@ -323,7 +324,14 @@
     font-weight: 600;
     letter-spacing: 0.18em;
   }
+  .fx-float{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:700;pointer-events:none;animation:fx-pop 700ms ease-out forwards;text-shadow:0 1px 0 #f3ead8;z-index:2}
+  .fx-float.dmg{color:#c44536}
+  .fx-float.heal{color:#3d6b8c}
+  @keyframes fx-pop{0%{opacity:1;top:8px}100%{opacity:0;top:-18px}}
+  .unit.hit{animation:fx-hit 180ms ease-in}
+  @keyframes fx-hit{0%{filter:brightness(1.4)}40%{transform:translateX(3px)}100%{filter:none;transform:none}}
   .unit {
+    position: relative;
     background: var(--paper-dark);
     border: 1px solid var(--border);
     border-radius: 2px;
@@ -527,9 +535,10 @@
       entrance: { x: 0, y: 2 },
       blocked: new Set(["0,0", "4,0", "0,4", "4,4"]),
       shop: { x: 2, y: 2 },
+      gossip: { x: 2, y: 1 },
       gateOut: { x: 4, y: 2 },
       gateBack: { x: 0, y: 2 },
-      hint: "城镇歇脚 · 药铺可买伤药/利刃 · 东口通山路",
+      hint: "城镇歇脚 · 药铺买药 · 北侧茶摊听闲话 · 东口通山路",
     },
     mountain: {
       id: "mountain",
@@ -671,6 +680,7 @@
     pendingAction: null,
     pendingSkillSlot: null,
     log: [],
+    fx: [],
   };
 
   const view = document.getElementById("view");
@@ -796,6 +806,9 @@
           if (m.shop && x === m.shop.x && y === m.shop.y) {
             classes.push("town");
           }
+          if (m.gossip && x === m.gossip.x && y === m.gossip.y) {
+            classes.push("gossip");
+          }
           if (state.mapId === "forest" && m.gate && x === m.gate.x && y === m.gate.y && state.encounterDone) {
             classes.push("gate");
           }
@@ -875,6 +888,11 @@
       if (m.shop && x === m.shop.x && y === m.shop.y) {
         renderMap();
         showShopDialogue();
+        return;
+      }
+      if (m.gossip && x === m.gossip.x && y === m.gossip.y) {
+        renderMap();
+        showToast("茶摊闲话：北山刀疤客拦路，过路费少了就动手。", "知道了");
         return;
       }
       if (m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
@@ -1098,15 +1116,18 @@
         const mitigated = Math.max(0, effectiveDef(t) - 2);
         const dmg = Math.max(1, Math.floor(enemy.atk * 1.4) - mitigated);
         t.hp = Math.max(0, t.hp - dmg);
+        noteFx(t.id, dmg, "dmg");
         pushLog("dmg", enemy.name + "「拦路斩」劈向 " + t.name + "，造成 " + dmg + " 伤害！");
       } else {
         const dmg = normalDamage(enemy, t);
         t.hp = Math.max(0, t.hp - dmg);
+        noteFx(t.id, dmg, "dmg");
         pushLog("dmg", enemy.name + "「索命刀」砍向 " + t.name + "，造成 " + dmg + " 伤害！");
       }
     } else {
       const dmg = normalDamage(enemy, t);
       t.hp = Math.max(0, t.hp - dmg);
+      noteFx(t.id, dmg, "dmg");
       pushLog("dmg", enemy.name + " 挥刀砍向 " + t.name + "，造成 " + dmg + " 伤害！");
     }
     if (t.hp <= 0) pushLog("sys", t.name + " 力竭倒下……");
@@ -1162,9 +1183,15 @@
     setTimeout(nextTurn, 350);
   }
 
+  function noteFx(id, n, kind) {
+    if (!state.fx) state.fx = [];
+    state.fx.push({ id: id, n: n, kind: kind });
+  }
+
   function doAttack(attacker, target) {
     const dmg = normalDamage(attacker, target);
     target.hp = Math.max(0, target.hp - dmg);
+    noteFx(target.id, dmg, "dmg");
     const an = attacker.attackName || "普攻";
     pushLog("dmg", attacker.name + "「" + an + "」攻向 " + target.name + "，造成 " + dmg + " 伤害！");
     if (target.hp <= 0) pushLog("sys", target.name + " 倒下了！");
@@ -1189,6 +1216,7 @@
       const mitigated = Math.max(0, effectiveDef(t) - 3);
       const dmg = Math.max(1, Math.floor(attacker.atk * 1.6) - mitigated);
       t.hp = Math.max(0, t.hp - dmg);
+      noteFx(t.id, dmg, "dmg");
       pushLog("dmg", attacker.name + " 施展「破风斩」！" + t.name + " 受到 " + dmg + " 重创！");
       if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
     } else if (attacker.id === "lu" && slot === 2) {
@@ -1196,6 +1224,7 @@
       living.forEach(function (t) {
         const dmg = Math.max(1, Math.floor(attacker.atk * 0.8));
         t.hp = Math.max(0, t.hp - dmg);
+        noteFx(t.id, dmg, "dmg");
         pushLog("dmg", attacker.name + "「横剑」扫过 " + t.name + "，造成 " + dmg + " 伤害！");
         if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
       });
@@ -1205,11 +1234,13 @@
       const heal = 45;
       const before = t.hp;
       t.hp = Math.min(t.maxHp, t.hp + heal);
+      noteFx(t.id, t.hp - before, "heal");
       pushLog("heal", attacker.name + " 施展「止血」，为 " + t.name + " 回复 " + (t.hp - before) + " 气血！");
     } else if (attacker.id === "su" && slot === 2) {
       state.party.filter(alive).forEach(function (t) {
         const before = t.hp;
         t.hp = Math.min(t.maxHp, t.hp + 22);
+        noteFx(t.id, t.hp - before, "heal");
         pushLog("heal", attacker.name + "「金疮」护住 " + t.name + "，回复 " + (t.hp - before) + " 气血！");
       });
     } else if (attacker.id === "tie" && slot === 1) {
@@ -1217,6 +1248,7 @@
       if (!t || !alive(t)) return false;
       const dmg = Math.max(1, Math.floor(attacker.atk * 1.3) - effectiveDef(t));
       t.hp = Math.max(0, t.hp - dmg);
+      noteFx(t.id, dmg, "dmg");
       applyTempDef(attacker, 4);
       pushLog("dmg", attacker.name + " 施展「开路」！" + t.name + " 受到 " + dmg + " 伤害，无声守势更坚（防+4）！");
       if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
@@ -1306,13 +1338,22 @@
     const logEl = $("combat-log");
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
     bindCombatEvents();
+    if (state.fx && state.fx.length) {
+      setTimeout(function () { state.fx = []; }, 720);
+    }
   }
 
   function unitCard(u, cls, isEnemy) {
     const hpPct = Math.max(0, (u.hp / u.maxHp) * 100);
     const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
     const defShow = effectiveDef(u);
+    const hits = (state.fx || []).filter(function (f) { return f.id === u.id; });
+    if (hits.some(function (f) { return f.kind === "dmg"; })) cls += " hit";
     let html = '<div class="' + cls + '" data-id="' + u.id + '">';
+    hits.forEach(function (f) {
+      const sign = f.kind === "heal" ? "+" : "-";
+      html += '<span class="fx-float ' + f.kind + '">' + sign + f.n + "</span>";
+    });
     html += '<img class="portrait" src="' + portraitSrc(u) + '" alt="">';
     html += '<div class="unit-body">';
     html += '<div class="name">' + escapeHtml(u.name) + '<span class="role">' + escapeHtml(u.role || "") + "</span></div>";
