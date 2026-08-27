@@ -219,12 +219,65 @@
   .map-wrap { text-align: center; }
   .map {
     display: grid;
-    grid-template-columns: repeat(5, 56px);
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 0;
     margin: 0 auto 12px;
-    width: fit-content;
+    width: min(560px, 100%);
+    aspect-ratio: 4 / 3;
     border: 2px solid var(--ink);
     box-shadow: 0 2px 10px rgba(42, 36, 32, 0.12);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .map.forest { background-image: url("assets/scenes/forest.jpg"); }
+  .map.town { background-image: url("assets/scenes/town.jpg"); }
+  .map.mountain { background-image: url("assets/scenes/mountain.jpg"); }
+  .map .cell {
+    width: auto;
+    height: auto;
+    background-image: none !important;
+    background-color: transparent;
+    border-color: transparent;
+    font-size: 0;
+    box-shadow: none;
+  }
+  .map .cell.obstacle {
+    background: rgba(20, 24, 16, 0.12) !important;
+    pointer-events: none;
+  }
+  .map .cell.adjacent {
+    cursor: pointer;
+    box-shadow: inset 0 0 0 2px rgba(184, 134, 11, 0.9);
+    background: rgba(243, 234, 216, 0.16) !important;
+  }
+  .map .cell.adjacent:hover {
+    background: rgba(243, 234, 216, 0.28) !important;
+  }
+  .map .cell.poi::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #c44536;
+    box-shadow: 0 0 0 2px #f3ead8;
+  }
+  .map .cell.poi.town::after,
+  .map .cell.poi.shop::after { background: #8a2e24; }
+  .map .cell.poi.gossip::after { background: #b8860b; }
+  .map .cell.poi.gate::after { background: #4a6b3a; }
+  .map .cell.player::after { display: none; }
+  .map .pawn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: 50% 16%;
+    border: 2px solid #f3ead8;
+    box-shadow: 0 1px 6px rgba(0,0,0,.45);
+    pointer-events: none;
+    z-index: 2;
   }
   .hint {
     font-size: 12px;
@@ -843,7 +896,7 @@
     updateTopbar();
     const m = currentMap();
     let html = '<div class="map-wrap">';
-    html += '<div class="map" aria-label="5x5 map">';
+    html += '<div class="map ' + state.mapId + '" aria-label="场景">';
     for (let y = 0; y < MAP_SIZE; y++) {
       for (let x = 0; x < MAP_SIZE; x++) {
         const classes = ["cell"];
@@ -883,7 +936,17 @@
           }
         }
         if (isPlayer) classes.push("player");
-        html += '<div class="' + classes.join(" ") + '" data-x="' + x + '" data-y="' + y + '"></div>';
+        const isPoi = walk && ((m.encounter && x === m.encounter.x && y === m.encounter.y && !((state.mapId==="forest"&&state.encounterDone)||(state.mapId==="mountain"&&state.eliteDone)))
+            || (m.hunter && x === m.hunter.x && y === m.hunter.y)
+            || (m.shop && x === m.shop.x && y === m.shop.y)
+            || (m.gossip && x === m.gossip.x && y === m.gossip.y)
+            || (m.gate && x === m.gate.x && y === m.gate.y && (state.mapId!=="forest" || state.encounterDone))
+            || (m.gateOut && x === m.gateOut.x && y === m.gateOut.y)
+            || (m.gateBack && x === m.gateBack.x && y === m.gateBack.y));
+        if (isPoi) classes.push("poi");
+        let inner = "";
+        if (isPlayer) inner = '<img class="pawn" src="assets/portraits/lu-chenzhou.png" alt="">';
+        html += '<div class="' + classes.join(" ") + '" data-x="' + x + '" data-y="' + y + '">' + inner + '</div>';
       }
     }
     html += "</div>";
