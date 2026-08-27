@@ -8,6 +8,7 @@
 .cell.obstacle { background-image: url("assets/tiles/pine.svg"); }
 .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
 .cell.player { background-image: url("assets/tiles/player.svg"); }
+.cell.town { background-image: url("assets/tiles/town.svg"); }
 
 .unit .portrait {
   width: 48px;
