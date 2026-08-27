@@ -302,7 +302,7 @@
     border: 1px solid var(--border);
     padding: 6px;
   }
-  .party-card .port {
+  .party-card .portrait {
     width: 56px;
     height: 75px;
     object-fit: cover;
@@ -378,7 +378,7 @@
     gap: 8px;
     align-items: stretch;
   }
-  .unit .port {
+  .unit .portrait {
     width: 64px;
     height: 86px;
     object-fit: cover;
@@ -712,11 +712,11 @@
   }
 
   function portraitSrc(u) {
-    if (!u || u.isEnemy) return "assets/portrait-bandit.jpg";
-    if (u.id === "lu") return "assets/portrait-lu.jpg";
-    if (u.id === "su") return "assets/portrait-su.jpg";
-    if (u.id === "tie") return "assets/portrait-tie.jpg";
-    return "assets/portrait-bandit.jpg";
+    if (!u || u.isEnemy) return "assets/portraits/bandit.png";
+    if (u.id === "lu") return "assets/portraits/lu-chenzhou.png";
+    if (u.id === "su") return "assets/portraits/su-wanqing.png";
+    if (u.id === "tie") return "assets/portraits/tie-wusheng.png";
+    return "assets/portraits/bandit.png";
   }
 
   // ——— 地图 ———
@@ -755,7 +755,7 @@
       const hpPct = Math.max(0, (p.hp / p.maxHp) * 100);
       const mpPct = p.maxMp ? Math.max(0, (p.mp / p.maxMp) * 100) : 0;
       html += `<div class="party-card">`;
-      html += `<img class="port" src="${portraitSrc(p)}" alt="">`;
+      html += `<img class="portrait" src="${portraitSrc(p)}" alt="">`;
       html += `<div class="party-info">`;
       html += `<div class="pn">${escapeHtml(p.name)} <span class="role">${escapeHtml(p.role || "")} · Lv.${p.level || 1}</span></div>`;
       html += `<div class="pt">${escapeHtml(p.tagline || "")}</div>`;
@@ -1058,7 +1058,7 @@
     const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
     const defShow = effectiveDef(u);
     let html = `<div class="${cls}" data-id="${u.id}">`;
-    html += `<img class="port" src="${portraitSrc(u)}" alt="">`;
+    html += `<img class="portrait" src="${portraitSrc(u)}" alt="">`;
     html += `<div class="unit-body">`;
     html += `<div class="name">${escapeHtml(u.name)}<span class="role">${escapeHtml(u.role || "")}</span></div>`;
     html += `<div class="row">气血 <div class="bar"><i style="width:${hpPct}%"></i></div> ${u.hp}/${u.maxHp}</div>`;
