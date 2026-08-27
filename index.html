@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* 《江湖试炼》视觉规范 · 来自 ui-wireframes/tokens.css */
   :root {
     --paper: #f3ead8;
     --paper-dark: #e6d9c2;
@@ -133,7 +132,6 @@
 
   #view { min-height: 360px; }
 
-  /* —— 按钮（tokens） —— */
   .btn {
     background: var(--btn);
     color: var(--ink);
@@ -160,7 +158,6 @@
     cursor: not-allowed;
   }
 
-  /* —— 血条 / 内力条（tokens） —— */
   .bar {
     height: 7px;
     border-radius: 1px;
@@ -178,7 +175,6 @@
   }
   .bar.mp > i { background: var(--mp); }
 
-  /* —— 地图格 5×5 · 美术 SVG 地砖 —— */
   .cell {
     width: 56px;
     height: 56px;
@@ -199,47 +195,26 @@
   .cell.obstacle { background-image: url("assets/tiles/pine.svg"); }
   .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
   .cell.encounter.done { background-image: url("assets/tiles/walk.svg"); opacity: 0.85; }
-  .cell.player { background-image: url("assets/tiles/player.svg"); }
   .cell.town { background-image: url("assets/tiles/town.svg"); }
-  .cell.walk.adjacent {
+  .cell.gate {
+    background-image: url("assets/tiles/walk.svg");
+    box-shadow: inset 0 0 0 2px rgba(184, 134, 11, 0.55);
+  }
+  .cell.player { background-image: url("assets/tiles/player.svg"); opacity: 1; }
+  .cell.walk.adjacent,
+  .cell.gate.adjacent,
+  .cell.town.adjacent,
+  .cell.encounter.adjacent {
     cursor: pointer;
     box-shadow: inset 0 0 0 2px #8a7a68;
   }
-  .cell.walk.adjacent:hover {
+  .cell.walk.adjacent:hover,
+  .cell.gate.adjacent:hover,
+  .cell.town.adjacent:hover,
+  .cell.encounter.adjacent:hover {
     box-shadow: inset 0 0 0 2px #b8860b;
   }
-  .cell .token {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--ink);
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
-  }
-  .cell .ico-pine {
-    width: 34px;
-    height: 40px;
-    display: block;
-  }
-  .cell .ico-lantern {
-    width: 22px;
-    height: 32px;
-    display: block;
-  }
-  .cell .stamp {
-    font-size: 16px;
-    font-weight: 700;
-    color: #a33028;
-    opacity: 0.42;
-    border: 1.5px solid #a33028;
-    border-radius: 3px;
-    padding: 1px 4px;
-    transform: rotate(-14deg);
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-  }
 
-  /* —— 探索 —— */
   .map-wrap { text-align: center; }
   .map {
     display: grid;
@@ -284,9 +259,10 @@
     padding: 6px;
   }
   .party-card .portrait {
-    width: 56px;
-    height: 75px;
+    width: 48px;
+    height: 64px;
     object-fit: cover;
+    object-position: 50% 16%;
     flex-shrink: 0;
     border: 1px solid var(--border);
   }
@@ -327,7 +303,6 @@
     margin-top: 2px;
   }
 
-  /* —— 战斗 —— */
   .combat { display: flex; flex-direction: column; gap: 10px; }
   .turn {
     font-size: 13px;
@@ -379,12 +354,6 @@
     color: var(--ink-muted);
     margin-left: 6px;
   }
-  .unit .tagline {
-    font-size: 10px;
-    color: var(--ink-muted);
-    line-height: 1.4;
-    margin-bottom: 4px;
-  }
   .unit .row {
     display: flex;
     align-items: center;
@@ -427,12 +396,6 @@
     font-size: 12px;
     color: var(--ink-muted);
     margin-left: auto;
-  }
-  .prompt {
-    width: 100%;
-    font-size: 12px;
-    color: var(--ink-muted);
-    margin-bottom: 2px;
   }
 
   .overlay {
@@ -478,7 +441,19 @@
     color: var(--ink);
   }
   .modal .reward { color: var(--gold); font-weight: 700; }
-  .modal .btn { margin-top: 16px; display: block; margin-left: auto; margin-right: auto; }
+  .modal .btn { margin-top: 12px; }
+  .modal .shop-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .modal .dialogue-line {
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.85;
+    letter-spacing: 0.04em;
+  }
 
   .toast {
     display: none;
@@ -516,7 +491,7 @@
       </div>
       <div class="stats">
         银两 <b id="silver">0</b>　经验 <b id="exp">0</b>
-        <span class="phase" id="phase-label">探索</span>
+        <span class="phase" id="phase-label">林道</span>
       </div>
     </div>
     <div id="view"></div>
@@ -534,14 +509,37 @@
 (function () {
   "use strict";
 
-  // ——— 数据 ———
   const MAP_SIZE = 5;
-  const PLAYER_START = { x: 2, y: 4 };
-  const ENCOUNTER = { x: 2, y: 1 }; // 触发战斗的格子（只打一次）
-  const TOWN = { x: 4, y: 2 }; // 驿站/城口，花银两回血
+  const MAP_NAMES = { forest: "林道", town: "城镇", mountain: "山路" };
 
-  // 不可走：边角树丛
-  const BLOCKED = new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]);
+  const MAPS = {
+    forest: {
+      id: "forest",
+      entrance: { x: 2, y: 4 },
+      blocked: new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]),
+      encounter: { x: 2, y: 1 },
+      hunter: { x: 0, y: 2 },
+      gate: { x: 4, y: 2 },
+      hint: "点击相邻格移动 · 西侧猎户 · 林中遇敌 · 除贼后东口通城",
+    },
+    town: {
+      id: "town",
+      entrance: { x: 0, y: 2 },
+      blocked: new Set(["0,0", "4,0", "0,4", "4,4"]),
+      shop: { x: 2, y: 2 },
+      gateOut: { x: 4, y: 2 },
+      gateBack: { x: 0, y: 2 },
+      hint: "城镇歇脚 · 药铺可买伤药/利刃 · 东口通山路",
+    },
+    mountain: {
+      id: "mountain",
+      entrance: { x: 2, y: 4 },
+      blocked: new Set(["0,0", "1,0", "3,0", "4,0", "0,4", "4,4", "0,1", "4,1"]),
+      encounter: { x: 2, y: 1 },
+      gateBack: { x: 1, y: 4 },
+      hint: "山路狭险 · 刀疤客拦路 · 西侧可回城 · 败则退回入口",
+    },
+  };
 
   const OPENING_LINES = [
     "城门之外，青石尚湿。",
@@ -568,7 +566,8 @@
         atk: 18, def: 8, spd: 12,
         level: 1, exp: 0,
         attackName: "拔剑",
-        skill: { name: "破风斩", cost: 12, desc: "单体重击，无视对方3点防御" },
+        skill1: { name: "破风斩", cost: 12, desc: "单体重击，无视对方3点防御" },
+        skill2: { name: "横剑", cost: 16, desc: "攻击全体敌人，各造成约八成攻击力伤害" },
         tempDef: 0,
       },
       {
@@ -581,7 +580,8 @@
         atk: 10, def: 6, spd: 14,
         level: 1, exp: 0,
         attackName: "点穴",
-        skill: { name: "止血", cost: 15, desc: "治疗一名友方45点气血" },
+        skill1: { name: "止血", cost: 15, desc: "治疗一名友方45点气血" },
+        skill2: { name: "金疮", cost: 20, desc: "全体友方回复22点气血" },
         tempDef: 0,
       },
       {
@@ -594,14 +594,16 @@
         atk: 22, def: 14, spd: 8,
         level: 1, exp: 0,
         attackName: "横刀",
-        skill: { name: "开路", cost: 10, desc: "单体1.3倍攻击，本回合自身防御+4" },
+        skill1: { name: "开路", cost: 10, desc: "单体1.3倍攻击，本回合自身防御+4" },
+        skill2: { name: "挡刀", cost: 12, desc: "指定一名友方，本回合临时防御+6" },
         tempDef: 0,
       },
     ];
   }
 
-  function makeMinions(count) {
+  function makeForestEnemies() {
     const names = ["杂兵甲", "杂兵乙", "杂兵丙"];
+    const count = Math.random() < 0.5 ? 2 : 3;
     const list = [];
     for (let i = 0; i < count; i++) {
       list.push({
@@ -613,48 +615,61 @@
         atk: 14, def: 5, spd: 10,
         tempDef: 0,
         isEnemy: true,
+        attackName: "挥刀",
       });
     }
-    list.push({
+    return list;
+  }
+
+  function makeChief() {
+    return {
       id: "chief",
       name: "刀疤客",
       role: "精英",
-      maxHp: 120, hp: 120,
+      maxHp: 220, hp: 220,
       maxMp: 0, mp: 0,
-      atk: 18, def: 8, spd: 9,
+      atk: 20, def: 10, spd: 11,
       tempDef: 0,
       isEnemy: true,
-    });
-    return list;
+      attackName: "索命刀",
+      actionCount: 0,
+    };
   }
 
   function effectiveDef(u) {
     return (u.def || 0) + (u.tempDef || 0);
   }
 
-  /** 普通攻击伤害：max(1, atk - def) */
   function normalDamage(attacker, target) {
     return Math.max(1, attacker.atk - effectiveDef(target));
   }
 
-  // ——— 状态 ———
   const state = {
-    mode: "map", // map | combat | result
-    px: PLAYER_START.x,
-    py: PLAYER_START.y,
+    mode: "map",
+    mapId: "forest",
+    px: MAPS.forest.entrance.x,
+    py: MAPS.forest.entrance.y,
     encounterDone: false,
+    eliteDone: false,
+    chapterClear: false,
+    boughtBlade: false,
+    hunterTalked: false,
+    eliteIntroDone: false,
+    townUnlocked: false,
+    mountainUnlocked: false,
     silver: 0,
-    exp: 0, // 队伍累计获得经验（展示用）
+    exp: 0,
     party: baseParty(),
     openingShown: false,
-    // combat
     enemies: [],
     fightSize: 0,
+    combatKind: null,
     turnQueue: [],
     turnIndex: 0,
-    combatPhase: null, // pickAlly | pickAction | pickTarget | enemyTurn | wait
+    combatPhase: null,
     actingAlly: null,
-    pendingAction: null, // 'attack' | 'skill'
+    pendingAction: null,
+    pendingSkillSlot: null,
     log: [],
   };
 
@@ -664,25 +679,43 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function currentMap() {
+    return MAPS[state.mapId] || MAPS.forest;
+  }
+
   function updateTopbar() {
     $("silver").textContent = state.silver;
     $("exp").textContent = state.exp;
-    $("phase-label").textContent =
-      state.mode === "map" ? "探索" :
-      state.mode === "combat" ? "战斗" : "结算";
+    if (state.mode === "combat") {
+      $("phase-label").textContent = "战斗 · " + (MAP_NAMES[state.mapId] || "");
+    } else if (state.chapterClear) {
+      $("phase-label").textContent = "试炼已过";
+    } else {
+      $("phase-label").textContent = MAP_NAMES[state.mapId] || "探索";
+    }
   }
 
   function key(x, y) { return x + "," + y; }
 
   function isWalkable(x, y) {
     if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return false;
-    return !BLOCKED.has(key(x, y));
+    const m = currentMap();
+    if (m.blocked.has(key(x, y))) return false;
+    return true;
   }
 
   function isAdjacent(x, y) {
     const dx = Math.abs(x - state.px);
     const dy = Math.abs(y - state.py);
     return (dx + dy === 1) && isWalkable(x, y);
+  }
+
+  function restorePartyFull() {
+    state.party.forEach((p) => {
+      p.hp = p.maxHp;
+      p.mp = p.maxMp;
+      p.tempDef = 0;
+    });
   }
 
   function grantExpToAlly(ally, amount) {
@@ -698,7 +731,7 @@
       ally.def = (ally.def || 0) + 1;
       ally.maxMp += 5;
       ally.mp = Math.min(ally.maxMp, ally.mp + 5);
-      notes.push(`${ally.name} 升至 ${ally.level} 级！`);
+      notes.push(ally.name + " 升至 " + ally.level + " 级！");
     }
     return notes;
   }
@@ -712,117 +745,256 @@
     return "assets/portraits/bandit.png";
   }
 
-  // ——— 地图 ———
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function enterMap(mapId, pos) {
+    state.mapId = mapId;
+    const m = MAPS[mapId];
+    if (pos && typeof pos.x === "number") {
+      state.px = pos.x;
+      state.py = pos.y;
+    } else if (pos !== false) {
+      state.px = m.entrance.x;
+      state.py = m.entrance.y;
+    }
+    state.mode = "map";
+    renderMap();
+  }
+
   function renderMap() {
     updateTopbar();
+    const m = currentMap();
     let html = '<div class="map-wrap">';
     html += '<div class="map" aria-label="5x5 map">';
     for (let y = 0; y < MAP_SIZE; y++) {
       for (let x = 0; x < MAP_SIZE; x++) {
         const classes = ["cell"];
         const isPlayer = x === state.px && y === state.py;
-        const isEnc = x === ENCOUNTER.x && y === ENCOUNTER.y;
-        const isTown = x === TOWN.x && y === TOWN.y;
-        if (!isWalkable(x, y)) {
+        const walk = isWalkable(x, y);
+        if (!walk && m.blocked.has(key(x, y))) {
+          classes.push("obstacle");
+        } else if (!walk) {
           classes.push("obstacle");
         } else {
           classes.push("walk");
           if (isAdjacent(x, y)) classes.push("adjacent");
-          if (isEnc) {
-            classes.push("encounter");
-            if (state.encounterDone) classes.push("done");
+
+          if (m.encounter && x === m.encounter.x && y === m.encounter.y) {
+            if (state.mapId === "forest") {
+              classes.push("encounter");
+              if (state.encounterDone) classes.push("done");
+            } else if (state.mapId === "mountain") {
+              classes.push("encounter");
+              if (state.eliteDone) classes.push("done");
+            }
           }
-          if (isTown) classes.push("town");
+          if (m.shop && x === m.shop.x && y === m.shop.y) {
+            classes.push("town");
+          }
+          if (state.mapId === "forest" && m.gate && x === m.gate.x && y === m.gate.y && state.encounterDone) {
+            classes.push("gate");
+          }
+          if (state.mapId === "town" && m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
+            classes.push("gate");
+          }
+          if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
+            classes.push("gate");
+          }
         }
         if (isPlayer) classes.push("player");
-
-        html += `<div class="${classes.join(" ")}" data-x="${x}" data-y="${y}"></div>`;
+        html += '<div class="' + classes.join(" ") + '" data-x="' + x + '" data-y="' + y + '"></div>';
       }
     }
     html += "</div>";
-    html += '<p class="hint">点击相邻格移动 · 遇敌一战 · 驿站可歇脚</p>';
-    if (state.encounterDone) {
-      html += '<p class="hint" style="margin-top:8px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
+    html += '<p class="hint">' + escapeHtml(m.hint || "点击相邻格移动") + "</p>";
+    if (state.mapId === "forest" && state.encounterDone) {
+      html += '<p class="hint" style="margin-top:8px">林道已清。东侧城口已开，可前往城镇。</p>';
+    }
+    if (state.chapterClear) {
+      html += '<p class="hint" style="margin-top:8px">本回试炼已过。刷新页面可重开。</p>';
     }
 
     html += '<div class="party-strip"><h3>同行</h3><div class="party-row">';
     state.party.forEach((p) => {
       const hpPct = Math.max(0, (p.hp / p.maxHp) * 100);
       const mpPct = p.maxMp ? Math.max(0, (p.mp / p.maxMp) * 100) : 0;
-      html += `<div class="party-card">`;
-      html += `<img class="portrait" src="${portraitSrc(p)}" alt="">`;
-      html += `<div class="party-info">`;
-      html += `<div class="pn">${escapeHtml(p.name)} <span class="role">${escapeHtml(p.role || "")} · Lv.${p.level || 1}</span></div>`;
-      html += `<div class="pt">${escapeHtml(p.tagline || "")}</div>`;
-      html += `<div class="row">气血 <div class="bar"><i style="width:${hpPct}%"></i></div></div>`;
-      html += `<div class="row">内力 <div class="bar mp"><i style="width:${mpPct}%"></i></div></div>`;
-      html += `</div></div>`;
+      html += '<div class="party-card">';
+      html += '<img class="portrait" src="' + portraitSrc(p) + '" alt="">';
+      html += '<div class="party-info">';
+      html += '<div class="pn">' + escapeHtml(p.name) + ' <span class="role">' + escapeHtml(p.role || "") + " · Lv." + (p.level || 1) + "</span></div>";
+      html += '<div class="pt">' + escapeHtml(p.tagline || "") + "</div>";
+      html += '<div class="row">气血 <div class="bar"><i style="width:' + hpPct + '%"></i></div></div>';
+      html += '<div class="row">内力 <div class="bar mp"><i style="width:' + mpPct + '%"></i></div></div>';
+      html += "</div></div>";
     });
-    html += "</div></div>";
-
-    html += "</div>";
+    html += "</div></div></div>";
     view.innerHTML = html;
 
     view.querySelectorAll(".cell.adjacent").forEach((el) => {
       el.addEventListener("click", () => {
-        const x = +el.dataset.x;
-        const y = +el.dataset.y;
-        moveTo(x, y);
+        moveTo(+el.dataset.x, +el.dataset.y);
       });
     });
   }
 
   function moveTo(x, y) {
-    if (!isAdjacent(x, y)) return;
+    if (!isAdjacent(x, y) || state.mode !== "map") return;
     state.px = x;
     state.py = y;
-    if (
-      x === ENCOUNTER.x &&
-      y === ENCOUNTER.y &&
-      !state.encounterDone
-    ) {
-      startCombat();
-      return;
+    const m = currentMap();
+
+    if (state.mapId === "forest") {
+      if (m.hunter && x === m.hunter.x && y === m.hunter.y) {
+        renderMap();
+        showHunterDialogue();
+        return;
+      }
+      if (m.encounter && x === m.encounter.x && y === m.encounter.y && !state.encounterDone) {
+        startCombat("forest");
+        return;
+      }
+      if (m.gate && x === m.gate.x && y === m.gate.y) {
+        if (state.encounterDone) {
+          state.townUnlocked = true;
+          enterMap("town", MAPS.town.entrance);
+          showToast("出了林道，官道尽头是城镇。", "进城");
+          return;
+        }
+        renderMap();
+        showToast("林中尚有贼影，官道未开。", "知道了");
+        return;
+      }
     }
+
+    if (state.mapId === "town") {
+      if (m.shop && x === m.shop.x && y === m.shop.y) {
+        renderMap();
+        showShopDialogue();
+        return;
+      }
+      if (m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
+        state.mountainUnlocked = true;
+        enterMap("mountain", MAPS.mountain.entrance);
+        showToast("出东口，山路渐陡。", "上路");
+        return;
+      }
+      if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
+        enterMap("forest", MAPS.forest.gate);
+        showToast("折回林道。", "继续");
+        return;
+      }
+    }
+
+    if (state.mapId === "mountain") {
+      if (m.encounter && x === m.encounter.x && y === m.encounter.y && !state.eliteDone && !state.chapterClear) {
+        renderMap();
+        maybeEliteIntroThenFight();
+        return;
+      }
+      if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
+        enterMap("town", MAPS.town.gateOut);
+        showToast("折回城镇。", "继续");
+        return;
+      }
+    }
+
     renderMap();
-    if (x === TOWN.x && y === TOWN.y) {
-      visitTown();
-    }
   }
 
-  function visitTown() {
-    const cost = 4;
-    const wounded = state.party.some((p) => p.hp < p.maxHp || p.mp < p.maxMp);
-    if (!wounded) {
-      showToast("驿站歇脚。众人无伤，店家只点了点头。", "离开");
-      return;
-    }
-    if (state.silver < cost) {
-      showToast("驿站可歇，只是银两不够（要 4 两）。", "离开");
-      return;
-    }
-    state.silver -= cost;
-    state.party.forEach((p) => { p.hp = p.maxHp; p.mp = p.maxMp; });
-    updateTopbar();
-    renderMap();
-    showToast("花了 4 两银子，伤药热汤下肚，气血内力回满。", "继续");
-  }
-
-  // ——— 战斗 ———
-  function startCombat() {
-    // 开战：保留等级成长，恢复至当前上限
-    state.party.forEach((p) => {
-      p.hp = p.maxHp;
-      p.mp = p.maxMp;
-      p.tempDef = 0;
+  function showHunterDialogue() {
+    state.hunterTalked = true;
+    const lines =
+      '<p class="dialogue-line">猎户：「林子里有刀疤脚印，别往深处走。」</p>' +
+      '<p class="dialogue-line">陆：「多谢。前面可通官道？」</p>' +
+      '<p class="dialogue-line">猎户：「通。通，却不一定活着到。」</p>';
+    showModal("林道·猎户", lines, "告辞", () => {
+      hideModal();
+      renderMap();
     });
-    const n = Math.random() < 0.5 ? 1 : 2; // 杂兵数；必带山贼头目
-    state.enemies = makeMinions(n);
+  }
+
+  function showShopDialogue() {
+    const lines =
+      '<p class="dialogue-line">掌柜：「伤药八两一包。刀钝了？隔壁铁铺。」</p>' +
+      '<p class="dialogue-line">苏：「药要新的。过期的我认得。」</p>' +
+      '<p class="dialogue-line">掌柜：「……姑娘好眼力。」</p>' +
+      '<div class="shop-actions">' +
+      '<button type="button" class="btn btn-primary" id="buy-heal">伤药 8两</button>' +
+      '<button type="button" class="btn" id="buy-blade"' + (state.boughtBlade ? " disabled" : "") + ">利刃 12两</button>" +
+      '<button type="button" class="btn" id="shop-leave">离开</button>' +
+      "</div>";
+    modal.className = "modal";
+    modal.innerHTML = "<h2>城镇·药铺</h2>" + lines;
+    overlay.classList.remove("hidden");
+
+    $("buy-heal").addEventListener("click", () => {
+      if (state.silver < 8) {
+        showToast("银两不够。伤药要八两。", "知道了");
+        return;
+      }
+      state.silver -= 8;
+      state.party.forEach((p) => {
+        if (p.hp > 0) p.hp = Math.min(p.maxHp, p.hp + 50);
+      });
+      updateTopbar();
+      hideModal();
+      renderMap();
+      showToast("伤药入喉，众人气血各回五十。", "继续");
+    });
+    $("buy-blade").addEventListener("click", () => {
+      if (state.boughtBlade) return;
+      if (state.silver < 12) {
+        showToast("银两不够。利刃要十二两。", "知道了");
+        return;
+      }
+      state.silver -= 12;
+      state.boughtBlade = true;
+      state.party.forEach((p) => { p.atk += 2; });
+      updateTopbar();
+      hideModal();
+      renderMap();
+      showToast("利刃过手，本回全员攻击+2。", "继续");
+    });
+    $("shop-leave").addEventListener("click", () => {
+      hideModal();
+      renderMap();
+    });
+  }
+
+  function maybeEliteIntroThenFight() {
+    if (state.eliteIntroDone) {
+      startCombat("mountain");
+      return;
+    }
+    state.eliteIntroDone = true;
+    const lines =
+      '<p class="dialogue-line">铁：「这人站得稳。不是杂兵。」</p>' +
+      '<p class="dialogue-line">陆：「报上名来。」</p>' +
+      '<p class="dialogue-line">精英：「过路费，或者命。」</p>';
+    showModal("山路·拦路", lines, "拔刀", () => {
+      hideModal();
+      startCombat("mountain");
+    });
+  }
+
+  function startCombat(kind) {
+    state.party.forEach((p) => { p.tempDef = 0; });
+    state.combatKind = kind || "forest";
+    if (state.combatKind === "mountain") {
+      state.enemies = [makeChief()];
+    } else {
+      state.enemies = makeForestEnemies();
+    }
     state.fightSize = state.enemies.length;
     state.log = [];
     state.mode = "combat";
     state.combatPhase = "wait";
-    pushLog("sys", "刀声起了。");
+    pushLog("sys", state.combatKind === "mountain" ? "刀疤客拦路。" : "刀声起了。");
     buildTurnQueue();
     renderCombat();
     setTimeout(nextTurn, 400);
@@ -831,16 +1003,18 @@
   function alive(u) { return u && u.hp > 0; }
 
   function buildTurnQueue() {
-    const all = [...state.party, ...state.enemies].filter(alive);
-    all.sort((a, b) => b.spd - a.spd || a.name.localeCompare(b.name, "zh"));
-    state.turnQueue = all.map((u) => u.id);
+    const all = state.party.concat(state.enemies).filter(alive);
+    all.sort(function (a, b) {
+      return b.spd - a.spd || a.name.localeCompare(b.name, "zh");
+    });
+    state.turnQueue = all.map(function (u) { return u.id; });
     state.turnIndex = 0;
   }
 
   function findUnit(id) {
     return (
-      state.party.find((p) => p.id === id) ||
-      state.enemies.find((e) => e.id === id)
+      state.party.find(function (p) { return p.id === id; }) ||
+      state.enemies.find(function (e) { return e.id === id; })
     );
   }
 
@@ -890,19 +1064,19 @@
     }
     if (!actor) return;
 
-    // 新回合开始：清掉本单位的临时防御
     actor.tempDef = 0;
 
     if (actor.isEnemy) {
       state.combatPhase = "enemyTurn";
       state.actingAlly = null;
       renderCombat();
-      setTimeout(() => enemyAct(actor), 600);
+      setTimeout(function () { enemyAct(actor); }, 600);
     } else {
       state.actingAlly = actor;
       state.combatPhase = "pickAction";
       state.pendingAction = null;
-      pushLog("sys", `轮到 ${actor.name}（${actor.role}）`);
+      state.pendingSkillSlot = null;
+      pushLog("sys", "轮到 " + actor.name + "（" + actor.role + "）");
       renderCombat();
     }
   }
@@ -917,12 +1091,27 @@
       finishActorTurn();
       return;
     }
-    targets.sort((a, b) => a.hp - b.hp);
+    targets.sort(function (a, b) { return a.hp - b.hp; });
     const t = targets[0];
-    const dmg = normalDamage(enemy, t);
-    t.hp = Math.max(0, t.hp - dmg);
-    pushLog("dmg", `${enemy.name} 挥刀砍向 ${t.name}，造成 ${dmg} 伤害！`);
-    if (t.hp <= 0) pushLog("sys", `${t.name} 力竭倒下……`);
+
+    if (enemy.id === "chief") {
+      enemy.actionCount = (enemy.actionCount || 0) + 1;
+      if (enemy.actionCount % 2 === 0) {
+        const mitigated = Math.max(0, effectiveDef(t) - 2);
+        const dmg = Math.max(1, Math.floor(enemy.atk * 1.4) - mitigated);
+        t.hp = Math.max(0, t.hp - dmg);
+        pushLog("dmg", enemy.name + "「拦路斩」劈向 " + t.name + "，造成 " + dmg + " 伤害！");
+      } else {
+        const dmg = normalDamage(enemy, t);
+        t.hp = Math.max(0, t.hp - dmg);
+        pushLog("dmg", enemy.name + "「索命刀」砍向 " + t.name + "，造成 " + dmg + " 伤害！");
+      }
+    } else {
+      const dmg = normalDamage(enemy, t);
+      t.hp = Math.max(0, t.hp - dmg);
+      pushLog("dmg", enemy.name + " 挥刀砍向 " + t.name + "，造成 " + dmg + " 伤害！");
+    }
+    if (t.hp <= 0) pushLog("sys", t.name + " 力竭倒下……");
     renderCombat();
     setTimeout(finishActorTurn, 500);
   }
@@ -930,10 +1119,8 @@
   function finishActorTurn() {
     if (checkEnd()) return;
     advanceTurnIndex();
-    const still = state.turnQueue.some((id) => alive(findUnit(id)));
-    if (!still) {
-      buildTurnQueue();
-    }
+    const still = state.turnQueue.some(function (id) { return alive(findUnit(id)); });
+    if (!still) buildTurnQueue();
     setTimeout(nextTurn, 350);
   }
 
@@ -941,51 +1128,71 @@
     const dmg = normalDamage(attacker, target);
     target.hp = Math.max(0, target.hp - dmg);
     const an = attacker.attackName || "普攻";
-    pushLog("dmg", `${attacker.name}「${an}」攻向 ${target.name}，造成 ${dmg} 伤害！`);
-    if (target.hp <= 0) pushLog("sys", `${target.name} 倒下了！`);
+    pushLog("dmg", attacker.name + "「" + an + "」攻向 " + target.name + "，造成 " + dmg + " 伤害！");
+    if (target.hp <= 0) pushLog("sys", target.name + " 倒下了！");
   }
 
-  function doSkill(attacker, targetOrNull) {
-    const sk = attacker.skill;
+  function getSkill(attacker, slot) {
+    return slot === 2 ? attacker.skill2 : attacker.skill1;
+  }
+
+  function doSkill(attacker, slot, targetOrNull) {
+    const sk = getSkill(attacker, slot);
+    if (!sk) return false;
     if (attacker.mp < sk.cost) {
-      pushLog("sys", `${attacker.name} 内力不足，无法施展「${sk.name}」！`);
+      pushLog("sys", attacker.name + " 内力不足，无法施展「" + sk.name + "」！");
       return false;
     }
     attacker.mp -= sk.cost;
 
-    if (attacker.id === "lu") {
-      // 破风斩：floor(atk*1.6)，无视目标 3 点防御
+    if (attacker.id === "lu" && slot === 1) {
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
       const mitigated = Math.max(0, effectiveDef(t) - 3);
       const dmg = Math.max(1, Math.floor(attacker.atk * 1.6) - mitigated);
       t.hp = Math.max(0, t.hp - dmg);
-      pushLog("dmg", `${attacker.name} 施展「破风斩」！${t.name} 受到 ${dmg} 重创！`);
-      if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
-    } else if (attacker.id === "su") {
-      // 止血：治疗友方 45
+      pushLog("dmg", attacker.name + " 施展「破风斩」！" + t.name + " 受到 " + dmg + " 重创！");
+      if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
+    } else if (attacker.id === "lu" && slot === 2) {
+      const living = state.enemies.filter(alive);
+      living.forEach(function (t) {
+        const dmg = Math.max(1, Math.floor(attacker.atk * 0.8));
+        t.hp = Math.max(0, t.hp - dmg);
+        pushLog("dmg", attacker.name + "「横剑」扫过 " + t.name + "，造成 " + dmg + " 伤害！");
+        if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
+      });
+    } else if (attacker.id === "su" && slot === 1) {
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
       const heal = 45;
       const before = t.hp;
       t.hp = Math.min(t.maxHp, t.hp + heal);
-      const actual = t.hp - before;
-      pushLog("heal", `${attacker.name} 施展「止血」，为 ${t.name} 回复 ${actual} 气血！`);
-    } else if (attacker.id === "tie") {
-      // 开路：单体 1.3×atk，自身本回合防御+4
+      pushLog("heal", attacker.name + " 施展「止血」，为 " + t.name + " 回复 " + (t.hp - before) + " 气血！");
+    } else if (attacker.id === "su" && slot === 2) {
+      state.party.filter(alive).forEach(function (t) {
+        const before = t.hp;
+        t.hp = Math.min(t.maxHp, t.hp + 22);
+        pushLog("heal", attacker.name + "「金疮」护住 " + t.name + "，回复 " + (t.hp - before) + " 气血！");
+      });
+    } else if (attacker.id === "tie" && slot === 1) {
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
       const dmg = Math.max(1, Math.floor(attacker.atk * 1.3) - effectiveDef(t));
       t.hp = Math.max(0, t.hp - dmg);
       attacker.tempDef = 4;
-      pushLog("dmg", `${attacker.name} 施展「开路」！${t.name} 受到 ${dmg} 伤害，无声守势更坚（防+4）！`);
-      if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
+      pushLog("dmg", attacker.name + " 施展「开路」！" + t.name + " 受到 " + dmg + " 伤害，无声守势更坚（防+4）！");
+      if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
+    } else if (attacker.id === "tie" && slot === 2) {
+      const t = targetOrNull;
+      if (!t || !alive(t)) return false;
+      t.tempDef = (t.tempDef || 0) + 6;
+      pushLog("heal", attacker.name + " 施展「挡刀」，" + t.name + " 本回合防御+6！");
     }
     return true;
   }
 
   function pushLog(cls, text) {
-    state.log.push({ cls, text });
+    state.log.push({ cls: cls, text: text });
     if (state.log.length > 40) state.log.shift();
   }
 
@@ -995,77 +1202,71 @@
 
     let html = '<div class="combat">';
     if (state.actingAlly && alive(state.actingAlly) && state.combatPhase === "pickAction") {
-      html += `<div class="turn">${escapeHtml(state.actingAlly.name)} 的回合 · 选动作后点选一个目标</div>`;
+      html += '<div class="turn">' + escapeHtml(state.actingAlly.name) + " 的回合 · 选动作</div>";
     } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
-      html += `<div class="turn">点选一个敌人</div>`;
-    } else if (state.combatPhase === "pickTargetHeal") {
-      html += `<div class="turn">点选一名友方治疗</div>`;
+      html += '<div class="turn">点选一个敌人</div>';
+    } else if (state.combatPhase === "pickTargetHeal" || state.combatPhase === "pickTargetAlly") {
+      html += '<div class="turn">点选一名友方</div>';
     } else if (state.combatPhase === "enemyTurn" && actor) {
-      html += `<div class="turn">${escapeHtml(actor.name)} 行动中……</div>`;
+      html += '<div class="turn">' + escapeHtml(actor.name) + " 行动中……</div>";
     } else {
-      html += `<div class="turn">遭遇战</div>`;
+      html += '<div class="turn">' + (state.combatKind === "mountain" ? "精英战" : "遭遇战") + "</div>";
     }
 
     html += '<div class="stage">';
-
-    // 我方
     html += '<div class="side"><h2>我方</h2>';
-    state.party.forEach((p) => {
+    state.party.forEach(function (p) {
       const cls = ["unit"];
       if (!alive(p)) cls.push("down");
       if (actor && actor.id === p.id) cls.push("active");
-      if (state.combatPhase === "pickTargetHeal" && alive(p)) cls.push("selectable");
+      if ((state.combatPhase === "pickTargetHeal" || state.combatPhase === "pickTargetAlly") && alive(p)) {
+        cls.push("selectable");
+      }
       html += unitCard(p, cls.join(" "), false);
     });
     html += "</div>";
 
-    // 敌方
     html += '<div class="side"><h2>敌方</h2>';
-    state.enemies.forEach((e) => {
+    state.enemies.forEach(function (e) {
       const cls = ["unit"];
       if (!alive(e)) cls.push("down");
       if (actor && actor.id === e.id) cls.push("active");
-      if (
-        (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") &&
-        alive(e)
-      ) {
+      if ((state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") && alive(e)) {
         cls.push("selectable");
       }
       html += unitCard(e, cls.join(" "), true);
     });
     html += "</div></div>";
 
-    // log
     html += '<div class="log" id="combat-log">';
-    state.log.forEach((l) => {
-      html += `<p class="${l.cls}">${escapeHtml(l.text)}</p>`;
+    state.log.forEach(function (l) {
+      html += '<p class="' + l.cls + '">' + escapeHtml(l.text) + "</p>";
     });
     html += "</div>";
 
-    // actions
     html += '<div class="actions" id="combat-actions">';
     if (state.combatPhase === "pickAction" && state.actingAlly && alive(state.actingAlly)) {
       const a = state.actingAlly;
-      const atkLabel = a.attackName || "普攻";
-      html += `<button type="button" class="btn btn-primary" id="btn-atk">${escapeHtml(atkLabel)}</button>`;
-      const canSkill = a.mp >= a.skill.cost;
-      html += `<button type="button" class="btn" id="btn-skill" ${canSkill ? "" : "disabled"}>技能 · ${escapeHtml(a.skill.name)}（${a.skill.cost}）</button>`;
-      html += `<span class="hint-inline">${escapeHtml(a.skill.desc)}</span>`;
+      html += '<button type="button" class="btn btn-primary" id="btn-atk">普攻</button>';
+      const can1 = a.mp >= a.skill1.cost;
+      const can2 = a.mp >= a.skill2.cost;
+      html += '<button type="button" class="btn" id="btn-skill1" ' + (can1 ? "" : "disabled") + ">技能1 · " + escapeHtml(a.skill1.name) + "（" + a.skill1.cost + "）</button>";
+      html += '<button type="button" class="btn" id="btn-skill2" ' + (can2 ? "" : "disabled") + ">技能2 · " + escapeHtml(a.skill2.name) + "（" + a.skill2.cost + "）</button>";
+      html += '<span class="hint-inline">' + escapeHtml(a.skill1.desc) + " ／ " + escapeHtml(a.skill2.desc) + "</span>";
     } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
-      html += `<span class="hint-inline" style="margin-left:0">点选一个敌人</span>`;
-      html += `<button type="button" class="btn" id="btn-cancel">取消</button>`;
-    } else if (state.combatPhase === "pickTargetHeal") {
-      html += `<span class="hint-inline" style="margin-left:0">点选一名友方</span>`;
-      html += `<button type="button" class="btn" id="btn-cancel">取消</button>`;
+      html += '<span class="hint-inline" style="margin-left:0">点选一个敌人</span>';
+      html += '<button type="button" class="btn" id="btn-cancel">取消</button>';
+    } else if (state.combatPhase === "pickTargetHeal" || state.combatPhase === "pickTargetAlly") {
+      html += '<span class="hint-inline" style="margin-left:0">点选一名友方</span>';
+      html += '<button type="button" class="btn" id="btn-cancel">取消</button>';
     } else if (state.combatPhase === "enemyTurn") {
-      html += `<span class="hint-inline" style="margin-left:0">敌方行动中……</span>`;
+      html += '<span class="hint-inline" style="margin-left:0">敌方行动中……</span>';
     }
     html += "</div></div>";
 
     view.innerHTML = html;
     const logEl = $("combat-log");
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
-
     bindCombatEvents();
   }
 
@@ -1073,86 +1274,107 @@
     const hpPct = Math.max(0, (u.hp / u.maxHp) * 100);
     const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
     const defShow = effectiveDef(u);
-    let html = `<div class="${cls}" data-id="${u.id}">`;
-    html += `<img class="portrait" src="${portraitSrc(u)}" alt="">`;
-    html += `<div class="unit-body">`;
-    html += `<div class="name">${escapeHtml(u.name)}<span class="role">${escapeHtml(u.role || "")}</span></div>`;
-    html += `<div class="row">气血 <div class="bar"><i style="width:${hpPct}%"></i></div> ${u.hp}/${u.maxHp}</div>`;
+    let html = '<div class="' + cls + '" data-id="' + u.id + '">';
+    html += '<img class="portrait" src="' + portraitSrc(u) + '" alt="">';
+    html += '<div class="unit-body">';
+    html += '<div class="name">' + escapeHtml(u.name) + '<span class="role">' + escapeHtml(u.role || "") + "</span></div>";
+    html += '<div class="row">气血 <div class="bar"><i style="width:' + hpPct + '%"></i></div> ' + u.hp + "/" + u.maxHp + "</div>";
     if (!isEnemy) {
-      html += `<div class="row">内力 <div class="bar mp"><i style="width:${mpPct}%"></i></div> ${u.mp}/${u.maxMp}</div>`;
+      html += '<div class="row">内力 <div class="bar mp"><i style="width:' + mpPct + '%"></i></div> ' + u.mp + "/" + u.maxMp + "</div>";
     }
-    html += `<div class="meta">攻 ${u.atk} · 防 ${defShow} · 速 ${u.spd}</div>`;
-    html += `</div></div>`;
+    html += '<div class="meta">攻 ' + u.atk + " · 防 " + defShow + " · 速 " + u.spd + "</div>";
+    html += "</div></div>";
     return html;
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
   }
 
   function bindCombatEvents() {
     const btnAtk = $("btn-atk");
-    const btnSkill = $("btn-skill");
+    const btnSkill1 = $("btn-skill1");
+    const btnSkill2 = $("btn-skill2");
     const btnCancel = $("btn-cancel");
 
     if (btnAtk) {
-      btnAtk.addEventListener("click", () => {
+      btnAtk.addEventListener("click", function () {
         state.pendingAction = "attack";
+        state.pendingSkillSlot = null;
         state.combatPhase = "pickTarget";
         renderCombat();
       });
     }
-    if (btnSkill) {
-      btnSkill.addEventListener("click", () => {
-        const a = state.actingAlly;
-        if (!a) return;
-        state.pendingAction = "skill";
-        if (a.id === "su") {
-          state.combatPhase = "pickTargetHeal";
-        } else {
-          // 陆沉舟破风斩、铁无声开路：均需选单体敌人
-          state.combatPhase = "pickTargetSkill";
-        }
+
+    function startSkill(slot) {
+      const a = state.actingAlly;
+      if (!a) return;
+      state.pendingAction = "skill";
+      state.pendingSkillSlot = slot;
+      if (a.id === "lu" && slot === 2) {
+        const ok = doSkill(a, 2, null);
         renderCombat();
-      });
+        if (ok) setTimeout(finishActorTurn, 450);
+        else {
+          state.combatPhase = "pickAction";
+          renderCombat();
+        }
+        return;
+      }
+      if (a.id === "su" && slot === 2) {
+        const ok = doSkill(a, 2, null);
+        renderCombat();
+        if (ok) setTimeout(finishActorTurn, 450);
+        else {
+          state.combatPhase = "pickAction";
+          renderCombat();
+        }
+        return;
+      }
+      if (a.id === "su" && slot === 1) {
+        state.combatPhase = "pickTargetHeal";
+      } else if (a.id === "tie" && slot === 2) {
+        state.combatPhase = "pickTargetAlly";
+      } else {
+        state.combatPhase = "pickTargetSkill";
+      }
+      renderCombat();
     }
+
+    if (btnSkill1) btnSkill1.addEventListener("click", function () { startSkill(1); });
+    if (btnSkill2) btnSkill2.addEventListener("click", function () { startSkill(2); });
+
     if (btnCancel) {
-      btnCancel.addEventListener("click", () => {
+      btnCancel.addEventListener("click", function () {
         state.pendingAction = null;
+        state.pendingSkillSlot = null;
         state.combatPhase = "pickAction";
         renderCombat();
       });
     }
 
-    view.querySelectorAll(".unit.selectable").forEach((el) => {
-      el.addEventListener("click", () => {
+    view.querySelectorAll(".unit.selectable").forEach(function (el) {
+      el.addEventListener("click", function () {
         const id = el.dataset.id;
         const a = state.actingAlly;
         if (!a) return;
 
         if (state.combatPhase === "pickTarget") {
-          const t = state.enemies.find((e) => e.id === id);
+          const t = state.enemies.find(function (e) { return e.id === id; });
           if (!t || !alive(t)) return;
           doAttack(a, t);
           renderCombat();
           setTimeout(finishActorTurn, 450);
         } else if (state.combatPhase === "pickTargetSkill") {
-          const t = state.enemies.find((e) => e.id === id);
+          const t = state.enemies.find(function (e) { return e.id === id; });
           if (!t || !alive(t)) return;
-          const ok = doSkill(a, t);
+          const ok = doSkill(a, state.pendingSkillSlot || 1, t);
           renderCombat();
           if (ok) setTimeout(finishActorTurn, 450);
           else {
             state.combatPhase = "pickAction";
             renderCombat();
           }
-        } else if (state.combatPhase === "pickTargetHeal") {
-          const t = state.party.find((p) => p.id === id);
+        } else if (state.combatPhase === "pickTargetHeal" || state.combatPhase === "pickTargetAlly") {
+          const t = state.party.find(function (p) { return p.id === id; });
           if (!t || !alive(t)) return;
-          const ok = doSkill(a, t);
+          const ok = doSkill(a, state.pendingSkillSlot || 1, t);
           renderCombat();
           if (ok) setTimeout(finishActorTurn, 450);
           else {
@@ -1167,50 +1389,62 @@
   function endCombat(won) {
     state.mode = "result";
     state.combatPhase = null;
+    const kind = state.combatKind;
+
     if (won) {
+      if (kind === "mountain") {
+        state.eliteDone = true;
+        state.chapterClear = true;
+        state.silver += 20;
+        const levelNotes = [];
+        state.party.forEach(function (p) {
+          if (alive(p)) levelNotes.push.apply(levelNotes, grantExpToAlly(p, 50));
+        });
+        updateTopbar();
+        state.mode = "map";
+        renderMap();
+        let msg = "刀疤客跪地：「……路，你们过。」　银两 +20　经验 +50";
+        if (levelNotes.length) msg += "　" + levelNotes.join("；");
+        msg += "　本回试炼已过。";
+        showToast(msg, "收刀");
+        return;
+      }
+
+      // forest win — keep wounds, unlock town gate
       state.encounterDone = true;
+      state.townUnlocked = true;
       const n = state.fightSize || state.enemies.length;
       const perExp = n >= 3 ? 30 : 20;
       const silverGain = n >= 3 ? 12 : 8;
       state.silver += silverGain;
       const levelNotes = [];
-      state.party.forEach((p) => {
-        if (alive(p)) {
-          levelNotes.push(...grantExpToAlly(p, perExp));
-        }
+      state.party.forEach(function (p) {
+        if (alive(p)) levelNotes.push.apply(levelNotes, grantExpToAlly(p, perExp));
       });
       updateTopbar();
-      let body = `<p>这一仗过了。经验、银两入袋。</p>
-         <p class="reward">银两 +${silverGain}　每名胜者经验 +${perExp}</p>
-         <p>当前银两 ${state.silver} · 队伍经验 ${state.exp}</p>`;
-      if (levelNotes.length) {
-        body += `<p>${levelNotes.map(escapeHtml).join("<br>")}</p>`;
-      }
       state.mode = "map";
       renderMap();
-      showToast(
-        `这一仗过了。经验、银两入袋。　银两 +${silverGain}　经验 +${perExp}` +
-          (levelNotes.length ? "　" + levelNotes.join("；") : ""),
-        "继续"
-      );
+      let msg = "这一仗过了。伤口还在，城口已开。　银两 +" + silverGain + "　经验 +" + perExp;
+      if (levelNotes.length) msg += "　" + levelNotes.join("；");
+      showToast(msg, "继续");
     } else {
       state.silver = Math.max(0, state.silver - 2);
-      // 退回城口：复活并回满，保留等级与银两，遇敌可再战
-      state.party.forEach((p) => {
-        p.hp = p.maxHp;
-        p.mp = p.maxMp;
-        p.tempDef = 0;
-      });
-      state.px = PLAYER_START.x;
-      state.py = PLAYER_START.y;
-      state.encounterDone = false;
+      restorePartyFull();
+      const ent = currentMap().entrance;
+      state.px = ent.x;
+      state.py = ent.y;
       updateTopbar();
       state.mode = "map";
       renderMap();
-      showToast(`撑不住。先退回城口。　银两 ${state.silver}`, "回城口");
+      const backMsg =
+        state.mapId === "mountain"
+          ? "撑不住。先退回山路入口。　银两 " + state.silver
+          : state.mapId === "town"
+            ? "撑不住。先退回城口。　银两 " + state.silver
+            : "撑不住。先退回林道入口。　银两 " + state.silver;
+      showToast(backMsg, "回入口");
     }
   }
-
 
   function showToast(msg, btnText) {
     const el = $("toast");
@@ -1218,11 +1452,7 @@
     $("toast-btn").textContent = btnText || "继续";
     el.classList.add("show");
     el.hidden = false;
-    const btn = $("toast-btn");
-    const done = () => {
-      hideToast();
-    };
-    btn.onclick = done;
+    $("toast-btn").onclick = function () { hideToast(); };
   }
 
   function hideToast() {
@@ -1233,7 +1463,8 @@
 
   function showModal(title, bodyHtml, btnText, onClick, extraClass) {
     modal.className = "modal" + (extraClass ? " " + extraClass : "");
-    modal.innerHTML = `<h2>${escapeHtml(title)}</h2>${bodyHtml}<br><button type="button" class="btn btn-primary" id="modal-btn">${escapeHtml(btnText)}</button>`;
+    modal.innerHTML = "<h2>" + escapeHtml(title) + "</h2>" + bodyHtml +
+      '<br><button type="button" class="btn btn-primary" id="modal-btn">' + escapeHtml(btnText) + "</button>";
     overlay.classList.remove("hidden");
     $("modal-btn").addEventListener("click", onClick);
   }
@@ -1247,13 +1478,13 @@
   function showOpening() {
     const linesHtml =
       '<div class="opening-lines">' +
-      OPENING_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("") +
+      OPENING_LINES.map(function (line) { return "<p>" + escapeHtml(line) + "</p>"; }).join("") +
       "</div>";
     showModal(
       "出城",
       linesHtml,
       "上路",
-      () => {
+      function () {
         hideModal();
         state.openingShown = true;
         state.mode = "map";
@@ -1265,15 +1496,24 @@
 
   function resetGame() {
     state.mode = "map";
-    state.px = PLAYER_START.x;
-    state.py = PLAYER_START.y;
+    state.mapId = "forest";
+    state.px = MAPS.forest.entrance.x;
+    state.py = MAPS.forest.entrance.y;
     state.encounterDone = false;
+    state.eliteDone = false;
+    state.chapterClear = false;
+    state.boughtBlade = false;
+    state.hunterTalked = false;
+    state.eliteIntroDone = false;
+    state.townUnlocked = false;
+    state.mountainUnlocked = false;
     state.silver = 0;
     state.exp = 0;
     state.party = baseParty();
     state.enemies = [];
     state.log = [];
     state.fightSize = 0;
+    state.combatKind = null;
     updateTopbar();
     if (!state.openingShown) {
       showOpening();
@@ -1282,7 +1522,6 @@
     }
   }
 
-  // 启动
   resetGame();
 })();
 </script>
