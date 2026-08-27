@@ -20,7 +20,7 @@
   gap: 8px;
   align-items: flex-start;
 }
-.unit .port {
+.unit .portrait {
   width: 48px;
   height: 64px;
   object-fit: cover;
@@ -30,7 +30,7 @@
   background: #e6d9c2;
 }
 
-.party-card .port {
+.party-card .portrait {
   width: 48px;
   height: 64px;
   object-fit: cover;
