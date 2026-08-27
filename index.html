@@ -634,7 +634,8 @@
       enterHint: "路窄了。北坡风硬，那刀疤多半在前头。",
       hotspots: [
         { id: "chief", left: 42, top: 22, w: 16, h: 48, label: "刀疤客" },
-        { id: "pass", left: 48, top: 0, w: 12, h: 16, label: "过关" }
+        { id: "pass", left: 48, top: 0, w: 12, h: 16, label: "过关" },
+        { id: "gateBack", left: 38, top: 78, w: 24, h: 18, label: "折回城镇" }
       ]
     }
   };
@@ -944,9 +945,6 @@
     });
     html += "</div>";
     html += '<p class="hint">' + escapeHtml(m.enterHint || "") + "</p>";
-    if (state.mapId === "mountain") {
-      html += '<div class="scene-nav"><button type="button" id="nav-back">折回城镇</button></div>';
-    }
     if (state.chapterClear) {
       html += '<p class="hint" style="margin-top:8px">本回试炼已过。刷新页面可重开。</p>';
     }
@@ -969,11 +967,6 @@
 
     view.querySelectorAll(".hotspot").forEach(function (el) {
       el.addEventListener("click", function () { onHotspot(el.dataset.id); });
-    });
-    var back = document.getElementById("nav-back");
-    if (back) back.addEventListener("click", function () {
-      enterMap("town");
-      showToast("折回城镇。", "继续");
     });
   }
 
@@ -1013,6 +1006,11 @@
       if (id === "chief") { if (!state.eliteDone && !state.chapterClear) maybeEliteIntroThenFight(); return; }
       if (id === "pass") {
         showToast("路开了。本回试炼已过。", "收刀");
+        return;
+      }
+      if (id === "gateBack") {
+        enterMap("town");
+        showToast("折回城镇。", "继续");
         return;
       }
     }
