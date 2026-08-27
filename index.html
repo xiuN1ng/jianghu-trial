@@ -5,241 +5,264 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>《江湖试炼》— 试玩原型</title>
 <style>
+  /* 《江湖试炼》视觉规范 · 来自 ui-wireframes/tokens.css */
   :root {
-    --ink: #1a1510;
-    --ink-soft: #3d3228;
-    --paper: #f3e6c8;
-    --paper-dark: #e8d4a8;
-    --paper-edge: #c4a574;
-    --cinnabar: #8b1a1a;
-    --cinnabar-bright: #b83a2a;
-    --jade: #2d5a3d;
-    --gold: #a67c2e;
-    --mp: #2a4a6b;
-    --hp: #8b1a1a;
-    --shadow: rgba(26, 21, 16, 0.25);
+    --paper: #f3ead8;
+    --paper-dark: #e6d9c2;
+    --ink: #2a2420;
+    --ink-muted: #6b5e52;
+    --border: #8a7a68;
+    --gold: #b8860b;
+    --hp: #c44536;
+    --hp-bg: #e8d4ce;
+    --mp: #3d6b8c;
+    --mp-bg: #d4e0e8;
+    --encounter: #c44536;
+    --obstacle: #5a6b4a;
+    --walk: #f7f1e6;
+    --player: #2a2420;
+    --btn: #e8dcc8;
+    --btn-hover: #dccfb8;
+    --btn-primary: #5c4033;
+    --btn-primary-text: #f3ead8;
+    --btn-disabled: #cfc4b4;
+    --log-bg: #ebe2d2;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    font-family: "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
-    background: linear-gradient(160deg, #2c2419 0%, #1a1510 100%);
+    font-family: "Noto Sans SC", system-ui, sans-serif;
+    background: #cfc4b4;
     color: var(--ink);
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 16px;
   }
-  h1 {
-    color: var(--paper);
-    font-size: 1.6rem;
-    letter-spacing: 0.35em;
-    margin-bottom: 4px;
-    font-weight: 700;
-    text-shadow: 0 2px 8px var(--shadow);
-  }
-  .subtitle {
-    color: var(--paper-edge);
-    font-size: 0.85rem;
-    margin-bottom: 14px;
-    letter-spacing: 0.15em;
-  }
+
   #app {
     width: 100%;
-    max-width: 720px;
+    max-width: 560px;
     background: var(--paper);
-    border: 3px solid var(--ink);
-    border-radius: 4px;
-    box-shadow: 0 8px 32px var(--shadow), inset 0 0 60px rgba(196, 165, 116, 0.2);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
     overflow: hidden;
   }
+
   .topbar {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    background: var(--ink);
-    color: var(--paper);
-    font-size: 0.9rem;
+    align-items: baseline;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
   }
-  .topbar span { margin-right: 12px; }
-  .topbar .stat { color: var(--paper-dark); }
-  .topbar .stat b { color: #f0d080; }
-  #view { padding: 16px; min-height: 420px; }
-  /* —— 地图 —— */
-  .map-wrap { text-align: center; }
-  .map-hint {
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    margin-bottom: 10px;
+  .topbar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
   }
-  .grid {
-    display: inline-grid;
-    grid-template-columns: repeat(5, 56px);
-    grid-template-rows: repeat(5, 56px);
-    gap: 4px;
-    background: var(--paper-edge);
-    padding: 6px;
-    border: 2px solid var(--ink);
+  .topbar .stats {
+    font-size: 13px;
+    color: var(--ink-muted);
   }
-  .tile {
-    width: 56px; height: 56px;
-    background: var(--paper-dark);
-    border: 1px solid var(--paper-edge);
+  .topbar .stats b { color: var(--gold); }
+  .topbar .phase {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-left: 10px;
+  }
+
+  #view { min-height: 360px; }
+
+  /* —— 按钮（tokens） —— */
+  .btn {
+    background: var(--btn);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { background: var(--btn-hover); }
+  .btn-primary {
+    background: var(--btn-primary);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #4a3328;
+    border-color: #4a3328;
+  }
+  .btn:disabled {
+    background: var(--btn-disabled);
+    color: var(--ink-muted);
+    cursor: not-allowed;
+  }
+
+  /* —— 血条 / 内力条（tokens） —— */
+  .bar {
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--hp-bg);
+    flex: 1;
+  }
+  .bar.mp { background: var(--mp-bg); }
+  .bar > i {
+    display: block;
+    height: 100%;
+    background: var(--hp);
+    transition: width 0.25s;
+  }
+  .bar.mp > i { background: var(--mp); }
+
+  /* —— 地图格 5×5（tokens） —— */
+  .cell {
+    width: 56px;
+    height: 56px;
+    border: 1px solid var(--border);
+    background: var(--walk);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 22px;
     cursor: default;
     user-select: none;
-    position: relative;
-    transition: background 0.15s;
   }
-  .tile.walkable { background: #ebe0c0; }
-  .tile.adjacent {
-    background: #d4e8c8;
+  .cell.obstacle { background: #d5dbc8; color: var(--obstacle); }
+  .cell.encounter { background: #f0d4ce; color: var(--encounter); font-weight: 700; }
+  .cell.encounter.done { background: var(--walk); color: var(--ink-muted); font-weight: 400; opacity: 0.85; }
+  .cell.player { background: var(--paper-dark); color: var(--player); font-weight: 700; }
+  .cell.walk.adjacent {
     cursor: pointer;
-    box-shadow: inset 0 0 0 2px var(--jade);
+    box-shadow: inset 0 0 0 2px var(--border);
   }
-  .tile.adjacent:hover { background: #c0dcb0; }
-  .tile.player { background: #f5e8b0; }
-  .tile.encounter { background: #e8c8c0; }
-  .tile.encounter.done { background: #ebe0c0; opacity: 0.85; }
-  .tile.blocked { background: #a89070; }
-  /* —— 战斗 —— */
-  .combat { display: flex; flex-direction: column; gap: 12px; }
-  .combat-title {
+  .cell.walk.adjacent:hover { background: var(--paper-dark); }
+
+  /* —— 探索 —— */
+  .map-wrap { text-align: center; }
+  .legend {
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .legend span { margin-right: 10px; }
+  .map {
+    display: grid;
+    grid-template-columns: repeat(5, 56px);
+    gap: 0;
+    margin: 0 auto 12px;
+    width: fit-content;
+    border: 2px solid var(--border);
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--ink-muted);
     text-align: center;
-    font-size: 1.1rem;
-    color: var(--cinnabar);
-    letter-spacing: 0.2em;
-    border-bottom: 1px solid var(--paper-edge);
-    padding-bottom: 6px;
+    margin-top: 4px;
   }
-  .battlefield {
+
+  /* —— 战斗 —— */
+  .combat { display: flex; flex-direction: column; gap: 10px; }
+  .turn {
+    font-size: 13px;
+    margin-bottom: 2px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .stage {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-  .side h3 {
-    font-size: 0.85rem;
-    color: var(--ink-soft);
+  .side h2 {
+    font-size: 12px;
+    color: var(--ink-muted);
     margin-bottom: 6px;
-    letter-spacing: 0.1em;
+    font-weight: 600;
   }
   .unit {
     background: var(--paper-dark);
-    border: 2px solid var(--paper-edge);
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 8px 10px;
     margin-bottom: 6px;
-    border-radius: 2px;
     cursor: default;
-    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .unit.active {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 1px var(--gold);
+  .unit.active { outline: 2px solid var(--btn-primary); }
+  .unit.selectable { cursor: pointer; outline: 1px dashed var(--border); }
+  .unit.selectable:hover { background: #ddd2bc; }
+  .unit.down { opacity: 0.45; filter: grayscale(0.5); }
+  .unit .name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .unit .name .role {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    margin-left: 6px;
   }
-  .unit.selectable {
-    cursor: pointer;
-    border-color: var(--jade);
-  }
-  .unit.selectable:hover { background: #d8ecc8; }
-  .unit.down {
-    opacity: 0.45;
-    filter: grayscale(0.6);
-  }
-  .unit-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    display: flex;
-    justify-content: space-between;
-  }
-  .unit-role { font-size: 0.75rem; color: var(--ink-soft); font-weight: 400; }
-  .bar-row {
+  .unit .row {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 4px;
-    font-size: 0.7rem;
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--ink-muted);
   }
-  .bar-label { width: 22px; color: var(--ink-soft); }
-  .bar {
-    flex: 1;
-    height: 10px;
-    background: rgba(0,0,0,0.12);
-    border: 1px solid var(--paper-edge);
-    overflow: hidden;
+  .unit .row .bar { flex: 1; }
+  .unit .meta {
+    font-size: 10px;
+    color: var(--ink-muted);
+    margin-top: 3px;
   }
-  .bar-fill { height: 100%; transition: width 0.25s; }
-  .bar-fill.hp { background: var(--hp); }
-  .bar-fill.mp { background: var(--mp); }
-  .bar-num { width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+
   .log {
-    background: #ebe0c0;
-    border: 1px solid var(--paper-edge);
-    height: 100px;
-    overflow-y: auto;
+    background: var(--log-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 88px;
+    overflow: auto;
     padding: 8px 10px;
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
   }
-  .log p { margin-bottom: 2px; }
-  .log .sys { color: var(--gold); }
-  .log .dmg { color: var(--cinnabar); }
-  .log .heal { color: var(--jade); }
+  .log p { margin: 0; }
+  .log .sys, .log .dim { color: var(--ink-muted); }
+  .log .dmg { color: var(--hp); }
+  .log .heal { color: var(--mp); }
+
   .actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    min-height: 40px;
+    min-height: 36px;
+  }
+  .actions .hint-inline {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-left: auto;
   }
   .prompt {
     width: 100%;
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    margin-bottom: 4px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 2px;
   }
-  button {
-    font-family: inherit;
-    font-size: 0.9rem;
-    padding: 8px 14px;
-    background: var(--ink);
-    color: var(--paper);
-    border: 2px solid var(--ink);
-    cursor: pointer;
-    letter-spacing: 0.08em;
-    transition: background 0.15s, color 0.15s;
-  }
-  button:hover:not(:disabled) {
-    background: var(--cinnabar);
-    border-color: var(--cinnabar);
-  }
-  button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-  button.secondary {
-    background: transparent;
-    color: var(--ink);
-  }
-  button.secondary:hover:not(:disabled) {
-    background: var(--paper-dark);
-    color: var(--ink);
-    border-color: var(--ink);
-  }
-  button.skill {
-    background: var(--mp);
-    border-color: var(--mp);
-  }
-  button.skill:hover:not(:disabled) {
-    background: #3a5a8b;
-  }
+
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(26, 21, 16, 0.7);
+    background: rgba(90, 74, 58, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -248,35 +271,31 @@
   .overlay.hidden { display: none; }
   .modal {
     background: var(--paper);
-    border: 3px solid var(--ink);
-    padding: 28px 36px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 24px 28px;
     text-align: center;
     max-width: 360px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   }
   .modal h2 {
-    font-size: 1.4rem;
-    letter-spacing: 0.25em;
+    font-size: 1.25rem;
+    letter-spacing: 0.2em;
     margin-bottom: 12px;
-    color: var(--cinnabar);
+    color: var(--hp);
   }
   .modal p { margin-bottom: 8px; font-size: 0.95rem; line-height: 1.6; }
   .modal .reward { color: var(--gold); font-weight: 700; }
-  .modal button { margin-top: 16px; }
-  .ally-pick .unit { cursor: pointer; }
-  .ally-pick .unit:hover:not(.down) { border-color: var(--jade); background: #d8ecc8; }
+  .modal .btn { margin-top: 12px; }
 </style>
 </head>
 <body>
-  <h1>江湖试炼</h1>
-  <p class="subtitle">试玩原型 · 行走江湖 · 一战定音</p>
   <div id="app">
     <div class="topbar">
-      <div>
-        <span class="stat">银两 <b id="silver">0</b></span>
-        <span class="stat">经验 <b id="exp">0</b></span>
+      <h1>江湖试炼</h1>
+      <div class="stats">
+        银两 <b id="silver">0</b>　经验 <b id="exp">0</b>
+        <span class="phase" id="phase-label">探索</span>
       </div>
-      <div id="phase-label">探索</div>
     </div>
     <div id="view"></div>
   </div>
@@ -300,8 +319,8 @@
   function baseParty() {
     return [
       {
-        id: "shen",
-        name: "沈衡",
+        id: "lu",
+        name: "陆沉舟",
         role: "剑客",
         maxHp: 100, hp: 100,
         maxMp: 30, mp: 30,
@@ -310,7 +329,7 @@
       },
       {
         id: "su",
-        name: "苏晚",
+        name: "苏晚晴",
         role: "医者",
         maxHp: 80, hp: 80,
         maxMp: 40, mp: 40,
@@ -319,7 +338,7 @@
       },
       {
         id: "tie",
-        name: "铁山",
+        name: "铁无声",
         role: "保镖",
         maxHp: 120, hp: 120,
         maxMp: 25, mp: 25,
@@ -396,16 +415,22 @@
   function renderMap() {
     updateTopbar();
     let html = '<div class="map-wrap">';
-    html += '<p class="map-hint">点击相邻格移动。赤色格藏有山贼（一战）。</p>';
-    html += '<div class="grid">';
+    html += '<div class="legend">';
+    html += '<span>· 可行走</span>';
+    html += '<span>🌲 障碍</span>';
+    html += '<span style="color:var(--encounter)">⚔️ 遇敌</span>';
+    html += '<span>🚶 角色</span>';
+    html += '</div>';
+    html += '<div class="map" aria-label="5x5 map">';
     for (let y = 0; y < MAP_SIZE; y++) {
       for (let x = 0; x < MAP_SIZE; x++) {
-        const classes = ["tile"];
+        const classes = ["cell"];
         const isPlayer = x === state.px && y === state.py;
         const isEnc = x === ENCOUNTER.x && y === ENCOUNTER.y;
-        if (!isWalkable(x, y)) classes.push("blocked");
-        else {
-          classes.push("walkable");
+        if (!isWalkable(x, y)) {
+          classes.push("obstacle");
+        } else {
+          classes.push("walk");
           if (isAdjacent(x, y)) classes.push("adjacent");
           if (isEnc) {
             classes.push("encounter");
@@ -425,13 +450,14 @@
       }
     }
     html += "</div>";
+    html += '<p class="hint">点击相邻格移动 · 赤色遇敌格一战定音</p>';
     if (state.encounterDone) {
-      html += '<p class="map-hint" style="margin-top:12px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
+      html += '<p class="hint" style="margin-top:8px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
     }
     html += "</div>";
     view.innerHTML = html;
 
-    view.querySelectorAll(".tile.adjacent").forEach((el) => {
+    view.querySelectorAll(".cell.adjacent").forEach((el) => {
       el.addEventListener("click", () => {
         const x = +el.dataset.x;
         const y = +el.dataset.y;
@@ -540,9 +566,7 @@
       renderCombat();
       setTimeout(() => enemyAct(actor), 600);
     } else {
-      // 玩家选择：先选行动者（可点当前回合角色直接行动，也可换选其他存活队友——按需求「选一名队友」）
-      // 规则：速度决定顺序；玩家回合时选该角色的 Attack/Skill。
-      // 按「Player picks one of 3 allies each turn OR auto-cycle」——采用 auto-cycle：到谁谁动。
+      // 玩家选择：速度决定顺序；到谁谁动
       state.actingAlly = actor;
       state.combatPhase = "pickAction";
       state.pendingAction = null;
@@ -602,7 +626,7 @@
     }
     attacker.mp -= sk.cost;
 
-    if (attacker.id === "shen") {
+    if (attacker.id === "lu") {
       // 破军斩
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
@@ -642,11 +666,22 @@
     const actor = state.actingAlly || (state.combatPhase === "enemyTurn" ? currentActor() : null);
 
     let html = '<div class="combat">';
-    html += '<div class="combat-title">— 遭遇战 —</div>';
-    html += '<div class="battlefield">';
+    if (state.actingAlly && alive(state.actingAlly) && state.combatPhase === "pickAction") {
+      html += `<div class="turn">${escapeHtml(state.actingAlly.name)} 的回合 · 选动作后点选一个目标</div>`;
+    } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
+      html += `<div class="turn">点选一个敌人</div>`;
+    } else if (state.combatPhase === "pickTargetHeal") {
+      html += `<div class="turn">点选一名友方治疗</div>`;
+    } else if (state.combatPhase === "enemyTurn" && actor) {
+      html += `<div class="turn">${escapeHtml(actor.name)} 行动中……</div>`;
+    } else {
+      html += `<div class="turn">遭遇战</div>`;
+    }
+
+    html += '<div class="stage">';
 
     // 我方
-    html += '<div class="side"><h3>我方</h3>';
+    html += '<div class="side"><h2>我方</h2>';
     state.party.forEach((p) => {
       const cls = ["unit"];
       if (!alive(p)) cls.push("down");
@@ -657,7 +692,7 @@
     html += "</div>";
 
     // 敌方
-    html += '<div class="side"><h3>敌方</h3>';
+    html += '<div class="side"><h2>敌方</h2>';
     state.enemies.forEach((e) => {
       const cls = ["unit"];
       if (!alive(e)) cls.push("down");
@@ -683,19 +718,18 @@
     html += '<div class="actions" id="combat-actions">';
     if (state.combatPhase === "pickAction" && state.actingAlly && alive(state.actingAlly)) {
       const a = state.actingAlly;
-      html += `<p class="prompt">选择 ${a.name} 的行动：</p>`;
-      html += `<button type="button" id="btn-atk">攻击</button>`;
+      html += `<button type="button" class="btn btn-primary" id="btn-atk">普攻</button>`;
       const canSkill = a.mp >= a.skill.cost;
-      html += `<button type="button" class="skill" id="btn-skill" ${canSkill ? "" : "disabled"}>${a.skill.name}（${a.skill.cost} MP）</button>`;
-      html += `<span style="font-size:0.75rem;color:var(--ink-soft)">${a.skill.desc}</span>`;
+      html += `<button type="button" class="btn" id="btn-skill" ${canSkill ? "" : "disabled"}>技能 · ${a.skill.name}（${a.skill.cost}）</button>`;
+      html += `<span class="hint-inline">${escapeHtml(a.skill.desc)}</span>`;
     } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
-      html += `<p class="prompt">选择一名敌人作为目标</p>`;
-      html += `<button type="button" class="secondary" id="btn-cancel">取消</button>`;
+      html += `<span class="hint-inline" style="margin-left:0">点选一个敌人</span>`;
+      html += `<button type="button" class="btn" id="btn-cancel">取消</button>`;
     } else if (state.combatPhase === "pickTargetHeal") {
-      html += `<p class="prompt">选择一名友方治疗</p>`;
-      html += `<button type="button" class="secondary" id="btn-cancel">取消</button>`;
+      html += `<span class="hint-inline" style="margin-left:0">点选一名友方</span>`;
+      html += `<button type="button" class="btn" id="btn-cancel">取消</button>`;
     } else if (state.combatPhase === "enemyTurn") {
-      html += `<p class="prompt">敌方行动中……</p>`;
+      html += `<span class="hint-inline" style="margin-left:0">敌方行动中……</span>`;
     }
     html += "</div></div>";
 
@@ -710,12 +744,12 @@
     const hpPct = Math.max(0, (u.hp / u.maxHp) * 100);
     const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
     let html = `<div class="${cls}" data-id="${u.id}">`;
-    html += `<div class="unit-name">${escapeHtml(u.name)} <span class="unit-role">${escapeHtml(u.role)}</span></div>`;
-    html += `<div class="bar-row"><span class="bar-label">气血</span><div class="bar"><div class="bar-fill hp" style="width:${hpPct}%"></div></div><span class="bar-num">${u.hp}/${u.maxHp}</span></div>`;
+    html += `<div class="name">${escapeHtml(u.name)}<span class="role">${escapeHtml(u.role)}</span></div>`;
+    html += `<div class="row">气血 <div class="bar"><i style="width:${hpPct}%"></i></div> ${u.hp}/${u.maxHp}</div>`;
     if (!isEnemy) {
-      html += `<div class="bar-row"><span class="bar-label">内力</span><div class="bar"><div class="bar-fill mp" style="width:${mpPct}%"></div></div><span class="bar-num">${u.mp}/${u.maxMp}</span></div>`;
+      html += `<div class="row">内力 <div class="bar mp"><i style="width:${mpPct}%"></i></div> ${u.mp}/${u.maxMp}</div>`;
     }
-    html += `<div style="font-size:0.7rem;color:var(--ink-soft);margin-top:2px">攻 ${u.atk} · 速 ${u.spd}</div>`;
+    html += `<div class="meta">攻 ${u.atk} · 速 ${u.spd}</div>`;
     html += "</div>";
     return html;
   }
@@ -843,7 +877,7 @@
   }
 
   function showModal(title, bodyHtml, btnText, onClick) {
-    modal.innerHTML = `<h2>${escapeHtml(title)}</h2>${bodyHtml}<br><button type="button" id="modal-btn">${escapeHtml(btnText)}</button>`;
+    modal.innerHTML = `<h2>${escapeHtml(title)}</h2>${bodyHtml}<br><button type="button" class="btn btn-primary" id="modal-btn">${escapeHtml(btnText)}</button>`;
     overlay.classList.remove("hidden");
     $("modal-btn").addEventListener("click", onClick);
   }
