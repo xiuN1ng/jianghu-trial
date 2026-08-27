@@ -1,25 +1,14 @@
 /* 《江湖试炼》美术正式包 · 地砖 + 战斗卡立绘 */
 .cell {
-  width: 56px;
-  height: 56px;
   font-size: 0;
-  color: transparent;
+  background-size: 56px 56px;
   background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-position: center;
 }
 .cell.walk { background-image: url("assets/tiles/walk.svg"); }
 .cell.obstacle { background-image: url("assets/tiles/pine.svg"); }
 .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
-.cell.encounter.done { background-image: url("assets/tiles/walk.svg"); opacity: 0.85; }
 .cell.player { background-image: url("assets/tiles/player.svg"); }
-.cell.walk.adjacent { cursor: pointer; box-shadow: inset 0 0 0 2px #8a7a68; }
 
-.unit {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
 .unit .portrait {
   width: 48px;
   height: 64px;
