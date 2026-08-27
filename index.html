@@ -1118,7 +1118,7 @@
     function tick(u) {
       if (!u) return;
       if ((u.tempDefPersist || 0) > 0) {
-        u.tempDefPersist -= 1;
+        u.tempDefPersist -= 1; // persist>0 这轮先留着
       } else {
         u.tempDef = 0;
       }
@@ -1133,10 +1133,9 @@
     const q = state.turnQueue;
     const idx = q.indexOf(caster.id);
     if (idx < 0) return false;
-    for (let i = 1; i < q.length; i++) {
-      const id = q[(idx + i) % q.length];
-      if (id === caster.id) break;
-      if (alive(findUnit(id))) return false;
+    // 只看队列后半段，不绕回队头
+    for (let i = idx + 1; i < q.length; i++) {
+      if (alive(findUnit(q[i]))) return false;
     }
     return true;
   }
