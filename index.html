@@ -663,6 +663,7 @@
     chapterClear: false,
     boughtBlade: false,
     hunterTalked: false,
+    gossipDone: false,
     eliteIntroDone: false,
     townUnlocked: false,
     mountainUnlocked: false,
@@ -762,6 +763,67 @@
       .replace(/>/g, "&gt;");
   }
 
+
+  var SAVE_KEY = "jianghu-trial-save-v1";
+
+  function serialParty() {
+    return state.party.map(function (p) {
+      return {
+        id: p.id, hp: p.hp, mp: p.mp, maxHp: p.maxHp, maxMp: p.maxMp,
+        atk: p.atk, def: p.def, spd: p.spd, level: p.level, exp: p.exp, tempDef: 0
+      };
+    });
+  }
+
+  function saveGame() {
+    if (state.mode === "combat") return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        mapId: state.mapId, px: state.px, py: state.py,
+        encounterDone: state.encounterDone, eliteDone: state.eliteDone,
+        chapterClear: state.chapterClear, boughtBlade: state.boughtBlade,
+        hunterTalked: state.hunterTalked, gossipDone: state.gossipDone,
+        eliteIntroDone: state.eliteIntroDone, townUnlocked: state.townUnlocked,
+        mountainUnlocked: state.mountainUnlocked, silver: state.silver, exp: state.exp,
+        openingShown: true, party: serialParty()
+      }));
+    } catch (e) {}
+  }
+
+  function loadGame() {
+    try {
+      var raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || !d.mapId || !MAPS[d.mapId]) return false;
+      state.mapId = d.mapId;
+      state.px = d.px; state.py = d.py;
+      state.encounterDone = !!d.encounterDone;
+      state.eliteDone = !!d.eliteDone;
+      state.chapterClear = !!d.chapterClear;
+      state.boughtBlade = !!d.boughtBlade;
+      state.hunterTalked = !!d.hunterTalked;
+      state.gossipDone = !!d.gossipDone;
+      state.eliteIntroDone = !!d.eliteIntroDone;
+      state.townUnlocked = !!d.townUnlocked;
+      state.mountainUnlocked = !!d.mountainUnlocked;
+      state.silver = d.silver || 0;
+      state.exp = d.exp || 0;
+      state.openingShown = true;
+      state.mode = "map";
+      if (d.party && d.party.length) {
+        d.party.forEach(function (s) {
+          var p = state.party.find(function (x) { return x.id === s.id; });
+          if (!p) return;
+          p.maxHp = s.maxHp; p.hp = s.hp; p.maxMp = s.maxMp; p.mp = s.mp;
+          p.atk = s.atk; p.def = s.def; p.spd = s.spd;
+          p.level = s.level; p.exp = s.exp; p.tempDef = 0;
+        });
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
   function enterMap(mapId, pos) {
     state.mapId = mapId;
     const m = MAPS[mapId];
@@ -774,6 +836,7 @@
     }
     state.mode = "map";
     renderMap();
+    saveGame();
   }
 
   function renderMap() {
@@ -892,7 +955,7 @@
       }
       if (m.gossip && x === m.gossip.x && y === m.gossip.y) {
         renderMap();
-        showToast("茶摊闲话：北山刀疤客拦路，过路费少了就动手。", "知道了");
+        showGossipDialogue();
         return;
       }
       if (m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
@@ -922,6 +985,26 @@
     }
 
     renderMap();
+  }
+
+  function showGossipDialogue() {
+    if (state.gossipDone) {
+      showToast("茶客已经把话说完了。线索：刀疤客第二刀是拦路斩。", "离开");
+      return;
+    }
+    const lines =
+      '<p class="dialogue-line">茶客：「北坡那刀疤，第一刀试你，第二刀才要命。」</p>' +
+      '<p class="dialogue-line">苏：「你怎么知道？」</p>' +
+      '<p class="dialogue-line">茶客：「活着回来的人，都这么说。喏，碎银四两，当我买你们去探探。」</p>';
+    showModal("城镇·茶摊", lines, "收下", function () {
+      hideModal();
+      state.gossipDone = true;
+      state.silver += 4;
+      updateTopbar();
+      renderMap();
+      saveGame();
+      showToast("银两 +4。线索：刀疤客第二刀是拦路斩。", "记下了");
+    });
   }
 
   function showHunterDialogue() {
@@ -1220,6 +1303,7 @@
       pushLog("dmg", attacker.name + " 施展「破风斩」！" + t.name + " 受到 " + dmg + " 重创！");
       if (t.hp <= 0) pushLog("sys", t.name + " 倒下了！");
     } else if (attacker.id === "lu" && slot === 2) {
+      pushLog("sys", "横剑一扫，风从刃上过。");
       const living = state.enemies.filter(alive);
       living.forEach(function (t) {
         const dmg = Math.max(1, Math.floor(attacker.atk * 0.8));
@@ -1237,6 +1321,7 @@
       noteFx(t.id, t.hp - before, "heal");
       pushLog("heal", attacker.name + " 施展「止血」，为 " + t.name + " 回复 " + (t.hp - before) + " 气血！");
     } else if (attacker.id === "su" && slot === 2) {
+      pushLog("sys", "金疮散开，血止住了。");
       state.party.filter(alive).forEach(function (t) {
         const before = t.hp;
         t.hp = Math.min(t.maxHp, t.hp + 22);
@@ -1256,7 +1341,7 @@
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
       applyTempDef(t, 6);
-      pushLog("heal", attacker.name + " 施展「挡刀」，" + t.name + " 本回合防御+6！");
+      pushLog("heal", "铁无声横刀挡在" + t.name + "身前。");
     }
     return true;
   }
@@ -1485,6 +1570,7 @@
         let msg = "刀疤客跪地：「……路，你们过。」　银两 +20　经验 +50";
         if (levelNotes.length) msg += "　" + levelNotes.join("；");
         msg += "　本回试炼已过。";
+        saveGame();
         showToast(msg, "收刀");
         return;
       }
@@ -1505,6 +1591,7 @@
       renderMap();
       let msg = "这一仗过了。伤口还在，城口已开。　银两 +" + silverGain + "　经验 +" + perExp;
       if (levelNotes.length) msg += "　" + levelNotes.join("；");
+      saveGame();
       showToast(msg, "继续");
     } else {
       state.silver = Math.max(0, state.silver - 2);
@@ -1583,6 +1670,7 @@
     state.chapterClear = false;
     state.boughtBlade = false;
     state.hunterTalked = false;
+    state.gossipDone = false;
     state.eliteIntroDone = false;
     state.townUnlocked = false;
     state.mountainUnlocked = false;
@@ -1601,7 +1689,12 @@
     }
   }
 
-  resetGame();
+  if (!loadGame()) {
+    resetGame();
+  } else {
+    updateTopbar();
+    renderMap();
+  }
 })();
 </script>
 </body>
