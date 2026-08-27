@@ -200,6 +200,7 @@
   .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
   .cell.encounter.done { background-image: url("assets/tiles/walk.svg"); opacity: 0.85; }
   .cell.player { background-image: url("assets/tiles/player.svg"); }
+  .cell.town { background-image: url("assets/tiles/town.svg"); }
   .cell.walk.adjacent {
     cursor: pointer;
     box-shadow: inset 0 0 0 2px #8a7a68;
@@ -537,6 +538,7 @@
   const MAP_SIZE = 5;
   const PLAYER_START = { x: 2, y: 4 };
   const ENCOUNTER = { x: 2, y: 1 }; // 触发战斗的格子（只打一次）
+  const TOWN = { x: 4, y: 2 }; // 驿站/城口，花银两回血
 
   // 不可走：边角树丛
   const BLOCKED = new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]);
@@ -613,6 +615,16 @@
         isEnemy: true,
       });
     }
+    list.push({
+      id: "chief",
+      name: "山贼头目",
+      role: "头目",
+      maxHp: 120, hp: 120,
+      maxMp: 0, mp: 0,
+      atk: 18, def: 8, spd: 9,
+      tempDef: 0,
+      isEnemy: true,
+    });
     return list;
   }
 
@@ -692,10 +704,11 @@
   }
 
   function portraitSrc(u) {
-    if (!u || u.isEnemy) return "assets/portraits/bandit.png";
+    if (!u) return "assets/portraits/bandit.png";
     if (u.id === "lu") return "assets/portraits/lu-chenzhou.png";
     if (u.id === "su") return "assets/portraits/su-wanqing.png";
     if (u.id === "tie") return "assets/portraits/tie-wusheng.png";
+    if (u.id === "chief") return "assets/portraits/bandit-chief.png";
     return "assets/portraits/bandit.png";
   }
 
@@ -709,6 +722,7 @@
         const classes = ["cell"];
         const isPlayer = x === state.px && y === state.py;
         const isEnc = x === ENCOUNTER.x && y === ENCOUNTER.y;
+        const isTown = x === TOWN.x && y === TOWN.y;
         if (!isWalkable(x, y)) {
           classes.push("obstacle");
         } else {
@@ -718,6 +732,7 @@
             classes.push("encounter");
             if (state.encounterDone) classes.push("done");
           }
+          if (isTown) classes.push("town");
         }
         if (isPlayer) classes.push("player");
 
@@ -725,7 +740,7 @@
       }
     }
     html += "</div>";
-    html += '<p class="hint">点击相邻格移动 · 赤色遇敌格一战定音</p>';
+    html += '<p class="hint">点击相邻格移动 · 遇敌一战 · 驿站可歇脚</p>';
     if (state.encounterDone) {
       html += '<p class="hint" style="margin-top:8px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
     }
@@ -770,6 +785,27 @@
       return;
     }
     renderMap();
+    if (x === TOWN.x && y === TOWN.y) {
+      visitTown();
+    }
+  }
+
+  function visitTown() {
+    const cost = 4;
+    const wounded = state.party.some((p) => p.hp < p.maxHp || p.mp < p.maxMp);
+    if (!wounded) {
+      showToast("驿站歇脚。众人无伤，店家只点了点头。", "离开");
+      return;
+    }
+    if (state.silver < cost) {
+      showToast("驿站可歇，只是银两不够（要 4 两）。", "离开");
+      return;
+    }
+    state.silver -= cost;
+    state.party.forEach((p) => { p.hp = p.maxHp; p.mp = p.maxMp; });
+    updateTopbar();
+    renderMap();
+    showToast("花了 4 两银子，伤药热汤下肚，气血内力回满。", "继续");
   }
 
   // ——— 战斗 ———
@@ -780,9 +816,9 @@
       p.mp = p.maxMp;
       p.tempDef = 0;
     });
-    const n = Math.random() < 0.5 ? 2 : 3;
-    state.fightSize = n;
+    const n = Math.random() < 0.5 ? 1 : 2; // 杂兵数；必带山贼头目
     state.enemies = makeMinions(n);
+    state.fightSize = state.enemies.length;
     state.log = [];
     state.mode = "combat";
     state.combatPhase = "wait";
