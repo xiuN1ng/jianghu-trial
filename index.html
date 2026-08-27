@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>《江湖试炼》— 试玩原型</title>
+<style>
+  :root {
+    --ink: #1a1510;
+    --ink-soft: #3d3228;
+    --paper: #f3e6c8;
+    --paper-dark: #e8d4a8;
+    --paper-edge: #c4a574;
+    --cinnabar: #8b1a1a;
+    --cinnabar-bright: #b83a2a;
+    --jade: #2d5a3d;
+    --gold: #a67c2e;
+    --mp: #2a4a6b;
+    --hp: #8b1a1a;
+    --shadow: rgba(26, 21, 16, 0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
+    background: linear-gradient(160deg, #2c2419 0%, #1a1510 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  h1 {
+    color: var(--paper);
+    font-size: 1.6rem;
+    letter-spacing: 0.35em;
+    margin-bottom: 4px;
+    font-weight: 700;
+    text-shadow: 0 2px 8px var(--shadow);
+  }
+  .subtitle {
+    color: var(--paper-edge);
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    letter-spacing: 0.15em;
+  }
+  #app {
+    width: 100%;
+    max-width: 720px;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 4px;
+    box-shadow: 0 8px 32px var(--shadow), inset 0 0 60px rgba(196, 165, 116, 0.2);
+    overflow: hidden;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 0.9rem;
+  }
+  .topbar span { margin-right: 12px; }
+  .topbar .stat { color: var(--paper-dark); }
+  .topbar .stat b { color: #f0d080; }
+  #view { padding: 16px; min-height: 420px; }
+  /* —— 地图 —— */
+  .map-wrap { text-align: center; }
+  .map-hint {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .grid {
+    display: inline-grid;
+    grid-template-columns: repeat(5, 56px);
+    grid-template-rows: repeat(5, 56px);
+    gap: 4px;
+    background: var(--paper-edge);
+    padding: 6px;
+    border: 2px solid var(--ink);
+  }
+  .tile {
+    width: 56px; height: 56px;
+    background: var(--paper-dark);
+    border: 1px solid var(--paper-edge);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: default;
+    user-select: none;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .tile.walkable { background: #ebe0c0; }
+  .tile.adjacent {
+    background: #d4e8c8;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 2px var(--jade);
+  }
+  .tile.adjacent:hover { background: #c0dcb0; }
+  .tile.player { background: #f5e8b0; }
+  .tile.encounter { background: #e8c8c0; }
+  .tile.encounter.done { background: #ebe0c0; opacity: 0.85; }
+  .tile.blocked { background: #a89070; }
+  /* —— 战斗 —— */
+  .combat { display: flex; flex-direction: column; gap: 12px; }
+  .combat-title {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--cinnabar);
+    letter-spacing: 0.2em;
+    border-bottom: 1px solid var(--paper-edge);
+    padding-bottom: 6px;
+  }
+  .battlefield {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .side h3 {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+  }
+  .unit {
+    background: var(--paper-dark);
+    border: 2px solid var(--paper-edge);
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 2px;
+    cursor: default;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .unit.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
+  }
+  .unit.selectable {
+    cursor: pointer;
+    border-color: var(--jade);
+  }
+  .unit.selectable:hover { background: #d8ecc8; }
+  .unit.down {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+  }
+  .unit-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+  }
+  .unit-role { font-size: 0.75rem; color: var(--ink-soft); font-weight: 400; }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.7rem;
+  }
+  .bar-label { width: 22px; color: var(--ink-soft); }
+  .bar {
+    flex: 1;
+    height: 10px;
+    background: rgba(0,0,0,0.12);
+    border: 1px solid var(--paper-edge);
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; transition: width 0.25s; }
+  .bar-fill.hp { background: var(--hp); }
+  .bar-fill.mp { background: var(--mp); }
+  .bar-num { width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+  .log {
+    background: #ebe0c0;
+    border: 1px solid var(--paper-edge);
+    height: 100px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .log p { margin-bottom: 2px; }
+  .log .sys { color: var(--gold); }
+  .log .dmg { color: var(--cinnabar); }
+  .log .heal { color: var(--jade); }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+  }
+  .prompt {
+    width: 100%;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 14px;
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.15s, color 0.15s;
+  }
+  button:hover:not(:disabled) {
+    background: var(--cinnabar);
+    border-color: var(--cinnabar);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+  button.secondary:hover:not(:disabled) {
+    background: var(--paper-dark);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  button.skill {
+    background: var(--mp);
+    border-color: var(--mp);
+  }
+  button.skill:hover:not(:disabled) {
+    background: #3a5a8b;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 21, 16, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    padding: 28px 36px;
+    text-align: center;
+    max-width: 360px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .modal h2 {
+    font-size: 1.4rem;
+    letter-spacing: 0.25em;
+    margin-bottom: 12px;
+    color: var(--cinnabar);
+  }
+  .modal p { margin-bottom: 8px; font-size: 0.95rem; line-height: 1.6; }
+  .modal .reward { color: var(--gold); font-weight: 700; }
+  .modal button { margin-top: 16px; }
+  .ally-pick .unit { cursor: pointer; }
+  .ally-pick .unit:hover:not(.down) { border-color: var(--jade); background: #d8ecc8; }
+</style>
+</head>
+<body>
+  <h1>江湖试炼</h1>
+  <p class="subtitle">试玩原型 · 行走江湖 · 一战定音</p>
+  <div id="app">
+    <div class="topbar">
+      <div>
+        <span class="stat">银两 <b id="silver">0</b></span>
+        <span class="stat">经验 <b id="exp">0</b></span>
+      </div>
+      <div id="phase-label">探索</div>
+    </div>
+    <div id="view"></div>
+  </div>
+
+  <div id="overlay" class="overlay hidden">
+    <div class="modal" id="modal"></div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ——— 数据 ———
+  const MAP_SIZE = 5;
+  const PLAYER_START = { x: 2, y: 4 };
+  const ENCOUNTER = { x: 2, y: 1 }; // 触发战斗的格子（只打一次）
+
+  // 不可走：边角树丛
+  const BLOCKED = new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]);
+
+  function baseParty() {
+    return [
+      {
+        id: "shen",
+        name: "沈衡",
+        role: "剑客",
+        maxHp: 100, hp: 100,
+        maxMp: 30, mp: 30,
+        atk: 22, spd: 14,
+        skill: { name: "破军斩", cost: 12, desc: "高伤害单体" },
+      },
+      {
+        id: "su",
+        name: "苏晚",
+        role: "医者",
+        maxHp: 80, hp: 80,
+        maxMp: 40, mp: 40,
+        atk: 12, spd: 12,
+        skill: { name: "回春", cost: 15, desc: "治疗一名友方" },
+      },
+      {
+        id: "tie",
+        name: "铁山",
+        role: "保镖",
+        maxHp: 120, hp: 120,
+        maxMp: 25, mp: 25,
+        atk: 18, spd: 8,
+        skill: { name: "横扫", cost: 14, desc: "攻击全体敌人" },
+      },
+    ];
+  }
+
+  function makeBandits(count) {
+    const names = ["山贼甲", "山贼乙", "山贼丙"];
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push({
+        id: "bandit" + i,
+        name: names[i] || "山贼",
+        role: "匪徒",
+        maxHp: 70 + i * 10, hp: 70 + i * 10,
+        maxMp: 0, mp: 0,
+        atk: 14 + i * 2, spd: 10 - i,
+        isEnemy: true,
+      });
+    }
+    return list;
+  }
+
+  // ——— 状态 ———
+  const state = {
+    mode: "map", // map | combat | result
+    px: PLAYER_START.x,
+    py: PLAYER_START.y,
+    encounterDone: false,
+    silver: 0,
+    exp: 0,
+    party: baseParty(),
+    // combat
+    enemies: [],
+    turnQueue: [],
+    turnIndex: 0,
+    combatPhase: null, // pickAlly | pickAction | pickTarget | enemyTurn | wait
+    actingAlly: null,
+    pendingAction: null, // 'attack' | 'skill'
+    log: [],
+  };
+
+  const view = document.getElementById("view");
+  const overlay = document.getElementById("overlay");
+  const modal = document.getElementById("modal");
+
+  function $(id) { return document.getElementById(id); }
+
+  function updateTopbar() {
+    $("silver").textContent = state.silver;
+    $("exp").textContent = state.exp;
+    $("phase-label").textContent =
+      state.mode === "map" ? "探索" :
+      state.mode === "combat" ? "战斗" : "结算";
+  }
+
+  function key(x, y) { return x + "," + y; }
+
+  function isWalkable(x, y) {
+    if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return false;
+    return !BLOCKED.has(key(x, y));
+  }
+
+  function isAdjacent(x, y) {
+    const dx = Math.abs(x - state.px);
+    const dy = Math.abs(y - state.py);
+    return (dx + dy === 1) && isWalkable(x, y);
+  }
+
+  // ——— 地图 ———
+  function renderMap() {
+    updateTopbar();
+    let html = '<div class="map-wrap">';
+    html += '<p class="map-hint">点击相邻格移动。赤色格藏有山贼（一战）。</p>';
+    html += '<div class="grid">';
+    for (let y = 0; y < MAP_SIZE; y++) {
+      for (let x = 0; x < MAP_SIZE; x++) {
+        const classes = ["tile"];
+        const isPlayer = x === state.px && y === state.py;
+        const isEnc = x === ENCOUNTER.x && y === ENCOUNTER.y;
+        if (!isWalkable(x, y)) classes.push("blocked");
+        else {
+          classes.push("walkable");
+          if (isAdjacent(x, y)) classes.push("adjacent");
+          if (isEnc) {
+            classes.push("encounter");
+            if (state.encounterDone) classes.push("done");
+          }
+        }
+        if (isPlayer) classes.push("player");
+
+        let icon = "";
+        if (!isWalkable(x, y)) icon = "🌲";
+        else if (isPlayer) icon = "🚶";
+        else if (isEnc && !state.encounterDone) icon = "⚔️";
+        else if (isEnc && state.encounterDone) icon = "✓";
+        else icon = "·";
+
+        html += `<div class="${classes.join(" ")}" data-x="${x}" data-y="${y}">${icon}</div>`;
+      }
+    }
+    html += "</div>";
+    if (state.encounterDone) {
+      html += '<p class="map-hint" style="margin-top:12px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
+    }
+    html += "</div>";
+    view.innerHTML = html;
+
+    view.querySelectorAll(".tile.adjacent").forEach((el) => {
+      el.addEventListener("click", () => {
+        const x = +el.dataset.x;
+        const y = +el.dataset.y;
+        moveTo(x, y);
+      });
+    });
+  }
+
+  function moveTo(x, y) {
+    if (!isAdjacent(x, y)) return;
+    state.px = x;
+    state.py = y;
+    if (
+      x === ENCOUNTER.x &&
+      y === ENCOUNTER.y &&
+      !state.encounterDone
+    ) {
+      startCombat();
+      return;
+    }
+    renderMap();
+  }
+
+  // ——— 战斗 ———
+  function startCombat() {
+    // 开战前恢复一点，但保留探索损伤（本原型探索无伤，开战满状态更清晰）
+    state.party = baseParty();
+    const n = Math.random() < 0.5 ? 1 : 2;
+    state.enemies = makeBandits(n);
+    state.log = [];
+    state.mode = "combat";
+    state.combatPhase = "wait";
+    pushLog("sys", "山贼拦路！拔剑迎战！");
+    buildTurnQueue();
+    renderCombat();
+    setTimeout(nextTurn, 400);
+  }
+
+  function alive(u) { return u && u.hp > 0; }
+
+  function buildTurnQueue() {
+    const all = [...state.party, ...state.enemies].filter(alive);
+    all.sort((a, b) => b.spd - a.spd || a.name.localeCompare(b.name, "zh"));
+    state.turnQueue = all.map((u) => u.id);
+    state.turnIndex = 0;
+  }
+
+  function findUnit(id) {
+    return (
+      state.party.find((p) => p.id === id) ||
+      state.enemies.find((e) => e.id === id)
+    );
+  }
+
+  function currentActor() {
+    if (!state.turnQueue.length) return null;
+    const id = state.turnQueue[state.turnIndex % state.turnQueue.length];
+    return findUnit(id);
+  }
+
+  function advanceTurnIndex() {
+    // 跳过已倒下的
+    const len = state.turnQueue.length;
+    for (let i = 0; i < len; i++) {
+      state.turnIndex = (state.turnIndex + 1) % len;
+      const u = findUnit(state.turnQueue[state.turnIndex]);
+      if (alive(u)) return;
+    }
+  }
+
+  function checkEnd() {
+    const partyAlive = state.party.some(alive);
+    const enemyAlive = state.enemies.some(alive);
+    if (!enemyAlive) {
+      endCombat(true);
+      return true;
+    }
+    if (!partyAlive) {
+      endCombat(false);
+      return true;
+    }
+    return false;
+  }
+
+  function nextTurn() {
+    if (state.mode !== "combat") return;
+    if (checkEnd()) return;
+
+    // 重建队列若有单位倒下（简化：每回合开始时若当前死了就跳）
+    let actor = currentActor();
+    let guard = 0;
+    while (actor && !alive(actor) && guard < 20) {
+      advanceTurnIndex();
+      actor = currentActor();
+      guard++;
+    }
+    if (!actor || !alive(actor)) {
+      buildTurnQueue();
+      actor = currentActor();
+    }
+    if (!actor) return;
+
+    if (actor.isEnemy) {
+      state.combatPhase = "enemyTurn";
+      state.actingAlly = null;
+      renderCombat();
+      setTimeout(() => enemyAct(actor), 600);
+    } else {
+      // 玩家选择：先选行动者（可点当前回合角色直接行动，也可换选其他存活队友——按需求「选一名队友」）
+      // 规则：速度决定顺序；玩家回合时选该角色的 Attack/Skill。
+      // 按「Player picks one of 3 allies each turn OR auto-cycle」——采用 auto-cycle：到谁谁动。
+      state.actingAlly = actor;
+      state.combatPhase = "pickAction";
+      state.pendingAction = null;
+      pushLog("sys", `轮到 ${actor.name}（${actor.role}）`);
+      renderCombat();
+    }
+  }
+
+  function enemyAct(enemy) {
+    if (state.mode !== "combat" || !alive(enemy)) {
+      finishActorTurn();
+      return;
+    }
+    const targets = state.party.filter(alive);
+    if (!targets.length) {
+      finishActorTurn();
+      return;
+    }
+    // 打血最少的
+    targets.sort((a, b) => a.hp - b.hp);
+    const t = targets[0];
+    const dmg = Math.max(1, enemy.atk + rand(-3, 3));
+    t.hp = Math.max(0, t.hp - dmg);
+    pushLog("dmg", `${enemy.name} 挥刀砍向 ${t.name}，造成 ${dmg} 伤害！`);
+    if (t.hp <= 0) pushLog("sys", `${t.name} 力竭倒下……`);
+    renderCombat();
+    setTimeout(finishActorTurn, 500);
+  }
+
+  function finishActorTurn() {
+    if (checkEnd()) return;
+    advanceTurnIndex();
+    // 若一整圈后刷新队列（处理死亡）
+    const still = state.turnQueue.some((id) => alive(findUnit(id)));
+    if (!still) {
+      buildTurnQueue();
+    }
+    setTimeout(nextTurn, 350);
+  }
+
+  function rand(a, b) {
+    return a + Math.floor(Math.random() * (b - a + 1));
+  }
+
+  function doAttack(attacker, target) {
+    const dmg = Math.max(1, attacker.atk + rand(-2, 4));
+    target.hp = Math.max(0, target.hp - dmg);
+    pushLog("dmg", `${attacker.name} 普通攻击 ${target.name}，造成 ${dmg} 伤害！`);
+    if (target.hp <= 0) pushLog("sys", `${target.name} 倒下了！`);
+  }
+
+  function doSkill(attacker, targetOrNull) {
+    const sk = attacker.skill;
+    if (attacker.mp < sk.cost) {
+      pushLog("sys", `${attacker.name} 内力不足，无法施展「${sk.name}」！`);
+      return false;
+    }
+    attacker.mp -= sk.cost;
+
+    if (attacker.id === "shen") {
+      // 破军斩
+      const t = targetOrNull;
+      if (!t || !alive(t)) return false;
+      const dmg = Math.max(1, Math.floor(attacker.atk * 1.8) + rand(2, 8));
+      t.hp = Math.max(0, t.hp - dmg);
+      pushLog("dmg", `${attacker.name} 施展「破军斩」！${t.name} 受到 ${dmg} 重创！`);
+      if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
+    } else if (attacker.id === "su") {
+      // 回春
+      const t = targetOrNull;
+      if (!t || !alive(t)) return false;
+      const heal = 28 + rand(0, 10);
+      t.hp = Math.min(t.maxHp, t.hp + heal);
+      pushLog("heal", `${attacker.name} 施展「回春」，为 ${t.name} 回复 ${heal} 气血！`);
+    } else if (attacker.id === "tie") {
+      // 横扫
+      const foes = state.enemies.filter(alive);
+      if (!foes.length) return false;
+      pushLog("dmg", `${attacker.name} 施展「横扫」！`);
+      foes.forEach((t) => {
+        const dmg = Math.max(1, Math.floor(attacker.atk * 0.75) + rand(0, 4));
+        t.hp = Math.max(0, t.hp - dmg);
+        pushLog("dmg", `　→ ${t.name} 受到 ${dmg} 伤害`);
+        if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
+      });
+    }
+    return true;
+  }
+
+  function pushLog(cls, text) {
+    state.log.push({ cls, text });
+    if (state.log.length > 40) state.log.shift();
+  }
+
+  function renderCombat() {
+    updateTopbar();
+    const actor = state.actingAlly || (state.combatPhase === "enemyTurn" ? currentActor() : null);
+
+    let html = '<div class="combat">';
+    html += '<div class="combat-title">— 遭遇战 —</div>';
+    html += '<div class="battlefield">';
+
+    // 我方
+    html += '<div class="side"><h3>我方</h3>';
+    state.party.forEach((p) => {
+      const cls = ["unit"];
+      if (!alive(p)) cls.push("down");
+      if (actor && actor.id === p.id) cls.push("active");
+      if (state.combatPhase === "pickTargetHeal" && alive(p)) cls.push("selectable");
+      html += unitCard(p, cls.join(" "), false);
+    });
+    html += "</div>";
+
+    // 敌方
+    html += '<div class="side"><h3>敌方</h3>';
+    state.enemies.forEach((e) => {
+      const cls = ["unit"];
+      if (!alive(e)) cls.push("down");
+      if (actor && actor.id === e.id) cls.push("active");
+      if (
+        (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") &&
+        alive(e)
+      ) {
+        cls.push("selectable");
+      }
+      html += unitCard(e, cls.join(" "), true);
+    });
+    html += "</div></div>";
+
+    // log
+    html += '<div class="log" id="combat-log">';
+    state.log.forEach((l) => {
+      html += `<p class="${l.cls}">${escapeHtml(l.text)}</p>`;
+    });
+    html += "</div>";
+
+    // actions
+    html += '<div class="actions" id="combat-actions">';
+    if (state.combatPhase === "pickAction" && state.actingAlly && alive(state.actingAlly)) {
+      const a = state.actingAlly;
+      html += `<p class="prompt">选择 ${a.name} 的行动：</p>`;
+      html += `<button type="button" id="btn-atk">攻击</button>`;
+      const canSkill = a.mp >= a.skill.cost;
+      html += `<button type="button" class="skill" id="btn-skill" ${canSkill ? "" : "disabled"}>${a.skill.name}（${a.skill.cost} MP）</button>`;
+      html += `<span style="font-size:0.75rem;color:var(--ink-soft)">${a.skill.desc}</span>`;
+    } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
+      html += `<p class="prompt">选择一名敌人作为目标</p>`;
+      html += `<button type="button" class="secondary" id="btn-cancel">取消</button>`;
+    } else if (state.combatPhase === "pickTargetHeal") {
+      html += `<p class="prompt">选择一名友方治疗</p>`;
+      html += `<button type="button" class="secondary" id="btn-cancel">取消</button>`;
+    } else if (state.combatPhase === "enemyTurn") {
+      html += `<p class="prompt">敌方行动中……</p>`;
+    }
+    html += "</div></div>";
+
+    view.innerHTML = html;
+    const logEl = $("combat-log");
+    if (logEl) logEl.scrollTop = logEl.scrollHeight;
+
+    bindCombatEvents();
+  }
+
+  function unitCard(u, cls, isEnemy) {
+    const hpPct = Math.max(0, (u.hp / u.maxHp) * 100);
+    const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
+    let html = `<div class="${cls}" data-id="${u.id}">`;
+    html += `<div class="unit-name">${escapeHtml(u.name)} <span class="unit-role">${escapeHtml(u.role)}</span></div>`;
+    html += `<div class="bar-row"><span class="bar-label">气血</span><div class="bar"><div class="bar-fill hp" style="width:${hpPct}%"></div></div><span class="bar-num">${u.hp}/${u.maxHp}</span></div>`;
+    if (!isEnemy) {
+      html += `<div class="bar-row"><span class="bar-label">内力</span><div class="bar"><div class="bar-fill mp" style="width:${mpPct}%"></div></div><span class="bar-num">${u.mp}/${u.maxMp}</span></div>`;
+    }
+    html += `<div style="font-size:0.7rem;color:var(--ink-soft);margin-top:2px">攻 ${u.atk} · 速 ${u.spd}</div>`;
+    html += "</div>";
+    return html;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function bindCombatEvents() {
+    const btnAtk = $("btn-atk");
+    const btnSkill = $("btn-skill");
+    const btnCancel = $("btn-cancel");
+
+    if (btnAtk) {
+      btnAtk.addEventListener("click", () => {
+        state.pendingAction = "attack";
+        state.combatPhase = "pickTarget";
+        renderCombat();
+      });
+    }
+    if (btnSkill) {
+      btnSkill.addEventListener("click", () => {
+        const a = state.actingAlly;
+        if (!a) return;
+        state.pendingAction = "skill";
+        if (a.id === "su") {
+          state.combatPhase = "pickTargetHeal";
+        } else if (a.id === "tie") {
+          // 横扫无需选目标
+          const ok = doSkill(a, null);
+          renderCombat();
+          if (ok) setTimeout(finishActorTurn, 450);
+          else {
+            state.combatPhase = "pickAction";
+            renderCombat();
+          }
+          return;
+        } else {
+          state.combatPhase = "pickTargetSkill";
+        }
+        renderCombat();
+      });
+    }
+    if (btnCancel) {
+      btnCancel.addEventListener("click", () => {
+        state.pendingAction = null;
+        state.combatPhase = "pickAction";
+        renderCombat();
+      });
+    }
+
+    view.querySelectorAll(".unit.selectable").forEach((el) => {
+      el.addEventListener("click", () => {
+        const id = el.dataset.id;
+        const a = state.actingAlly;
+        if (!a) return;
+
+        if (state.combatPhase === "pickTarget") {
+          const t = state.enemies.find((e) => e.id === id);
+          if (!t || !alive(t)) return;
+          doAttack(a, t);
+          renderCombat();
+          setTimeout(finishActorTurn, 450);
+        } else if (state.combatPhase === "pickTargetSkill") {
+          const t = state.enemies.find((e) => e.id === id);
+          if (!t || !alive(t)) return;
+          const ok = doSkill(a, t);
+          renderCombat();
+          if (ok) setTimeout(finishActorTurn, 450);
+          else {
+            state.combatPhase = "pickAction";
+            renderCombat();
+          }
+        } else if (state.combatPhase === "pickTargetHeal") {
+          const t = state.party.find((p) => p.id === id);
+          if (!t || !alive(t)) return;
+          const ok = doSkill(a, t);
+          renderCombat();
+          if (ok) setTimeout(finishActorTurn, 450);
+          else {
+            state.combatPhase = "pickAction";
+            renderCombat();
+          }
+        }
+      });
+    });
+  }
+
+  function endCombat(won) {
+    state.mode = "result";
+    state.combatPhase = null;
+    if (won) {
+      state.encounterDone = true;
+      const silverGain = 30 + rand(10, 40);
+      const expGain = 50 + rand(10, 30);
+      state.silver += silverGain;
+      state.exp += expGain;
+      updateTopbar();
+      showModal(
+        "胜利",
+        `<p>山贼溃逃，道路重开。</p>
+         <p class="reward">获得银两 +${silverGain}　经验 +${expGain}</p>
+         <p>当前银两 ${state.silver} · 经验 ${state.exp}</p>`,
+        "返回地图",
+        () => {
+          hideModal();
+          state.mode = "map";
+          renderMap();
+        }
+      );
+    } else {
+      showModal(
+        "败北",
+        `<p>全员力竭……江湖路远，再试一次。</p>`,
+        "重新开始",
+        () => {
+          hideModal();
+          resetGame();
+        }
+      );
+    }
+  }
+
+  function showModal(title, bodyHtml, btnText, onClick) {
+    modal.innerHTML = `<h2>${escapeHtml(title)}</h2>${bodyHtml}<br><button type="button" id="modal-btn">${escapeHtml(btnText)}</button>`;
+    overlay.classList.remove("hidden");
+    $("modal-btn").addEventListener("click", onClick);
+  }
+
+  function hideModal() {
+    overlay.classList.add("hidden");
+    modal.innerHTML = "";
+  }
+
+  function resetGame() {
+    state.mode = "map";
+    state.px = PLAYER_START.x;
+    state.py = PLAYER_START.y;
+    state.encounterDone = false;
+    state.silver = 0;
+    state.exp = 0;
+    state.party = baseParty();
+    state.enemies = [];
+    state.log = [];
+    updateTopbar();
+    renderMap();
+  }
+
+  // 启动
+  resetGame();
+})();
+</script>
+</body>
+</html>
