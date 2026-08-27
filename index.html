@@ -170,6 +170,38 @@
     text-align: center;
     margin-top: 4px;
   }
+  .party-strip {
+    text-align: left;
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .party-strip h3 {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .party-chip {
+    background: var(--paper-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .party-chip .pn { font-weight: 700; font-size: 13px; }
+  .party-chip .pt {
+    color: var(--ink-muted);
+    font-size: 11px;
+    line-height: 1.45;
+    margin-top: 2px;
+  }
+  .party-chip .ps {
+    color: var(--ink-muted);
+    font-size: 10px;
+    margin-top: 2px;
+  }
 
   /* —— 战斗 —— */
   .combat { display: flex; flex-direction: column; gap: 10px; }
@@ -208,6 +240,12 @@
     font-weight: 400;
     color: var(--ink-muted);
     margin-left: 6px;
+  }
+  .unit .tagline {
+    font-size: 10px;
+    color: var(--ink-muted);
+    line-height: 1.4;
+    margin-bottom: 4px;
   }
   .unit .row {
     display: flex;
@@ -260,32 +298,42 @@
   }
 
   .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(90, 74, 58, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
+    position: fixed; inset: 0;
+    background: rgba(42, 36, 32, 0.28);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0 0 28px; z-index: 20;
   }
   .overlay.hidden { display: none; }
   .modal {
     background: var(--paper);
-    border: 2px solid var(--border);
-    border-radius: 6px;
-    padding: 24px 28px;
-    text-align: center;
-    max-width: 360px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px 12px;
+    text-align: left;
+    max-width: 420px;
+    width: min(420px, 92vw);
+    box-shadow: 0 4px 16px rgba(42, 36, 32, 0.18);
+  }
+  .modal.opening {
+    text-align: left;
+    max-width: 400px;
   }
   .modal h2 {
-    font-size: 1.25rem;
-    letter-spacing: 0.2em;
-    margin-bottom: 12px;
-    color: var(--hp);
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    color: var(--ink);
+    font-weight: 700;
   }
   .modal p { margin-bottom: 8px; font-size: 0.95rem; line-height: 1.6; }
+  .modal .opening-lines p {
+    margin-bottom: 6px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
   .modal .reward { color: var(--gold); font-weight: 700; }
-  .modal .btn { margin-top: 12px; }
+  .modal .btn { margin-top: 12px; display: block; margin-left: auto; margin-right: auto; }
 </style>
 </head>
 <body>
@@ -316,53 +364,88 @@
   // 不可走：边角树丛
   const BLOCKED = new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]);
 
+  const OPENING_LINES = [
+    "城门之外，青石尚湿。",
+    "陆沉舟按了按剑柄，剑是新的，心却比剑更急。",
+    "苏晚晴把药包往袖里一塞：「先别逞能，伤药有限。」",
+    "铁无声只嗯了一声，刀背朝外，人站在最险的那侧。",
+    "官道向北，林影里有人声。",
+    "沉舟道：「走。今日便见见江湖。」",
+    "晚晴冷笑：「见江湖容易，活着回来难。」",
+    "无声抬刀，示意前路。",
+    "风过林梢，像有人磨刀。",
+    "往前走，踩到异样处，便是一战。",
+  ];
+
   function baseParty() {
     return [
       {
         id: "lu",
         name: "陆沉舟",
-        role: "剑客",
-        maxHp: 100, hp: 100,
-        maxMp: 30, mp: 30,
-        atk: 22, spd: 14,
-        skill: { name: "破军斩", cost: 12, desc: "高伤害单体" },
+        role: "少侠",
+        tagline: "刚出江湖的少侠，剑还新，心比剑更急，总想先挡在人前。",
+        maxHp: 120, hp: 120,
+        maxMp: 40, mp: 40,
+        atk: 18, def: 8, spd: 12,
+        level: 1, exp: 0,
+        attackName: "拔剑",
+        skill: { name: "破风斩", cost: 12, desc: "单体重击，无视对方3点防御" },
+        tempDef: 0,
       },
       {
         id: "su",
         name: "苏晚晴",
-        role: "医者",
-        maxHp: 80, hp: 80,
-        maxMp: 40, mp: 40,
-        atk: 12, spd: 12,
-        skill: { name: "回春", cost: 15, desc: "治疗一名友方" },
+        role: "医女",
+        tagline: "走方医女，嘴上不饶人，袖里伤药从不离身。",
+        maxHp: 90, hp: 90,
+        maxMp: 60, mp: 60,
+        atk: 10, def: 6, spd: 14,
+        level: 1, exp: 0,
+        attackName: "点穴",
+        skill: { name: "止血", cost: 15, desc: "治疗一名友方45点气血" },
+        tempDef: 0,
       },
       {
         id: "tie",
         name: "铁无声",
-        role: "保镖",
-        maxHp: 120, hp: 120,
-        maxMp: 25, mp: 25,
-        atk: 18, spd: 8,
-        skill: { name: "横扫", cost: 14, desc: "攻击全体敌人" },
+        role: "刀客",
+        tagline: "过路刀客，话少得像哑了，人却总站在最险的那一侧。",
+        maxHp: 160, hp: 160,
+        maxMp: 30, mp: 30,
+        atk: 22, def: 14, spd: 8,
+        level: 1, exp: 0,
+        attackName: "横刀",
+        skill: { name: "开路", cost: 10, desc: "单体1.3倍攻击，本回合自身防御+4" },
+        tempDef: 0,
       },
     ];
   }
 
-  function makeBandits(count) {
-    const names = ["山贼甲", "山贼乙", "山贼丙"];
+  function makeMinions(count) {
+    const names = ["杂兵甲", "杂兵乙", "杂兵丙"];
     const list = [];
     for (let i = 0; i < count; i++) {
       list.push({
-        id: "bandit" + i,
-        name: names[i] || "山贼",
-        role: "匪徒",
-        maxHp: 70 + i * 10, hp: 70 + i * 10,
+        id: "minion" + i,
+        name: names[i] || "杂兵",
+        role: "杂兵",
+        maxHp: 80, hp: 80,
         maxMp: 0, mp: 0,
-        atk: 14 + i * 2, spd: 10 - i,
+        atk: 14, def: 5, spd: 10,
+        tempDef: 0,
         isEnemy: true,
       });
     }
     return list;
+  }
+
+  function effectiveDef(u) {
+    return (u.def || 0) + (u.tempDef || 0);
+  }
+
+  /** 普通攻击伤害：max(1, atk - def) */
+  function normalDamage(attacker, target) {
+    return Math.max(1, attacker.atk - effectiveDef(target));
   }
 
   // ——— 状态 ———
@@ -372,10 +455,12 @@
     py: PLAYER_START.y,
     encounterDone: false,
     silver: 0,
-    exp: 0,
+    exp: 0, // 队伍累计获得经验（展示用）
     party: baseParty(),
+    openingShown: false,
     // combat
     enemies: [],
+    fightSize: 0,
     turnQueue: [],
     turnIndex: 0,
     combatPhase: null, // pickAlly | pickAction | pickTarget | enemyTurn | wait
@@ -409,6 +494,24 @@
     const dx = Math.abs(x - state.px);
     const dy = Math.abs(y - state.py);
     return (dx + dy === 1) && isWalkable(x, y);
+  }
+
+  function grantExpToAlly(ally, amount) {
+    ally.exp = (ally.exp || 0) + amount;
+    state.exp += amount;
+    const notes = [];
+    while (ally.exp >= 100) {
+      ally.exp -= 100;
+      ally.level = (ally.level || 1) + 1;
+      ally.maxHp += 12;
+      ally.hp = Math.min(ally.maxHp, ally.hp + 12);
+      ally.atk += 2;
+      ally.def = (ally.def || 0) + 1;
+      ally.maxMp += 5;
+      ally.mp = Math.min(ally.maxMp, ally.mp + 5);
+      notes.push(`${ally.name} 升至 ${ally.level} 级！`);
+    }
+    return notes;
   }
 
   // ——— 地图 ———
@@ -454,6 +557,17 @@
     if (state.encounterDone) {
       html += '<p class="hint" style="margin-top:8px">山贼已除。可继续闲逛，或刷新页面重开。</p>';
     }
+
+    html += '<div class="party-strip"><h3>同行</h3>';
+    state.party.forEach((p) => {
+      html += `<div class="party-chip">`;
+      html += `<div class="pn">${escapeHtml(p.name)} <span style="font-weight:400;color:var(--ink-muted)">Lv.${p.level || 1}</span></div>`;
+      html += `<div class="pt">${escapeHtml(p.tagline || "")}</div>`;
+      html += `<div class="ps">气血 ${p.hp}/${p.maxHp} · 内力 ${p.mp}/${p.maxMp} · 攻${p.atk} 防${p.def} 速${p.spd} · 经验 ${p.exp || 0}/100</div>`;
+      html += `</div>`;
+    });
+    html += "</div>";
+
     html += "</div>";
     view.innerHTML = html;
 
@@ -483,14 +597,19 @@
 
   // ——— 战斗 ———
   function startCombat() {
-    // 开战前恢复一点，但保留探索损伤（本原型探索无伤，开战满状态更清晰）
-    state.party = baseParty();
-    const n = Math.random() < 0.5 ? 1 : 2;
-    state.enemies = makeBandits(n);
+    // 开战：保留等级成长，恢复至当前上限
+    state.party.forEach((p) => {
+      p.hp = p.maxHp;
+      p.mp = p.maxMp;
+      p.tempDef = 0;
+    });
+    const n = Math.random() < 0.5 ? 2 : 3;
+    state.fightSize = n;
+    state.enemies = makeMinions(n);
     state.log = [];
     state.mode = "combat";
     state.combatPhase = "wait";
-    pushLog("sys", "山贼拦路！拔剑迎战！");
+    pushLog("sys", "刀声起了。");
     buildTurnQueue();
     renderCombat();
     setTimeout(nextTurn, 400);
@@ -519,7 +638,6 @@
   }
 
   function advanceTurnIndex() {
-    // 跳过已倒下的
     const len = state.turnQueue.length;
     for (let i = 0; i < len; i++) {
       state.turnIndex = (state.turnIndex + 1) % len;
@@ -546,7 +664,6 @@
     if (state.mode !== "combat") return;
     if (checkEnd()) return;
 
-    // 重建队列若有单位倒下（简化：每回合开始时若当前死了就跳）
     let actor = currentActor();
     let guard = 0;
     while (actor && !alive(actor) && guard < 20) {
@@ -560,13 +677,15 @@
     }
     if (!actor) return;
 
+    // 新回合开始：清掉本单位的临时防御
+    actor.tempDef = 0;
+
     if (actor.isEnemy) {
       state.combatPhase = "enemyTurn";
       state.actingAlly = null;
       renderCombat();
       setTimeout(() => enemyAct(actor), 600);
     } else {
-      // 玩家选择：速度决定顺序；到谁谁动
       state.actingAlly = actor;
       state.combatPhase = "pickAction";
       state.pendingAction = null;
@@ -585,10 +704,9 @@
       finishActorTurn();
       return;
     }
-    // 打血最少的
     targets.sort((a, b) => a.hp - b.hp);
     const t = targets[0];
-    const dmg = Math.max(1, enemy.atk + rand(-3, 3));
+    const dmg = normalDamage(enemy, t);
     t.hp = Math.max(0, t.hp - dmg);
     pushLog("dmg", `${enemy.name} 挥刀砍向 ${t.name}，造成 ${dmg} 伤害！`);
     if (t.hp <= 0) pushLog("sys", `${t.name} 力竭倒下……`);
@@ -599,7 +717,6 @@
   function finishActorTurn() {
     if (checkEnd()) return;
     advanceTurnIndex();
-    // 若一整圈后刷新队列（处理死亡）
     const still = state.turnQueue.some((id) => alive(findUnit(id)));
     if (!still) {
       buildTurnQueue();
@@ -607,14 +724,11 @@
     setTimeout(nextTurn, 350);
   }
 
-  function rand(a, b) {
-    return a + Math.floor(Math.random() * (b - a + 1));
-  }
-
   function doAttack(attacker, target) {
-    const dmg = Math.max(1, attacker.atk + rand(-2, 4));
+    const dmg = normalDamage(attacker, target);
     target.hp = Math.max(0, target.hp - dmg);
-    pushLog("dmg", `${attacker.name} 普通攻击 ${target.name}，造成 ${dmg} 伤害！`);
+    const an = attacker.attackName || "普攻";
+    pushLog("dmg", `${attacker.name}「${an}」攻向 ${target.name}，造成 ${dmg} 伤害！`);
     if (target.hp <= 0) pushLog("sys", `${target.name} 倒下了！`);
   }
 
@@ -627,31 +741,32 @@
     attacker.mp -= sk.cost;
 
     if (attacker.id === "lu") {
-      // 破军斩
+      // 破风斩：floor(atk*1.6)，无视目标 3 点防御
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
-      const dmg = Math.max(1, Math.floor(attacker.atk * 1.8) + rand(2, 8));
+      const mitigated = Math.max(0, effectiveDef(t) - 3);
+      const dmg = Math.max(1, Math.floor(attacker.atk * 1.6) - mitigated);
       t.hp = Math.max(0, t.hp - dmg);
-      pushLog("dmg", `${attacker.name} 施展「破军斩」！${t.name} 受到 ${dmg} 重创！`);
+      pushLog("dmg", `${attacker.name} 施展「破风斩」！${t.name} 受到 ${dmg} 重创！`);
       if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
     } else if (attacker.id === "su") {
-      // 回春
+      // 止血：治疗友方 45
       const t = targetOrNull;
       if (!t || !alive(t)) return false;
-      const heal = 28 + rand(0, 10);
+      const heal = 45;
+      const before = t.hp;
       t.hp = Math.min(t.maxHp, t.hp + heal);
-      pushLog("heal", `${attacker.name} 施展「回春」，为 ${t.name} 回复 ${heal} 气血！`);
+      const actual = t.hp - before;
+      pushLog("heal", `${attacker.name} 施展「止血」，为 ${t.name} 回复 ${actual} 气血！`);
     } else if (attacker.id === "tie") {
-      // 横扫
-      const foes = state.enemies.filter(alive);
-      if (!foes.length) return false;
-      pushLog("dmg", `${attacker.name} 施展「横扫」！`);
-      foes.forEach((t) => {
-        const dmg = Math.max(1, Math.floor(attacker.atk * 0.75) + rand(0, 4));
-        t.hp = Math.max(0, t.hp - dmg);
-        pushLog("dmg", `　→ ${t.name} 受到 ${dmg} 伤害`);
-        if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
-      });
+      // 开路：单体 1.3×atk，自身本回合防御+4
+      const t = targetOrNull;
+      if (!t || !alive(t)) return false;
+      const dmg = Math.max(1, Math.floor(attacker.atk * 1.3) - effectiveDef(t));
+      t.hp = Math.max(0, t.hp - dmg);
+      attacker.tempDef = 4;
+      pushLog("dmg", `${attacker.name} 施展「开路」！${t.name} 受到 ${dmg} 伤害，无声守势更坚（防+4）！`);
+      if (t.hp <= 0) pushLog("sys", `${t.name} 倒下了！`);
     }
     return true;
   }
@@ -718,9 +833,10 @@
     html += '<div class="actions" id="combat-actions">';
     if (state.combatPhase === "pickAction" && state.actingAlly && alive(state.actingAlly)) {
       const a = state.actingAlly;
-      html += `<button type="button" class="btn btn-primary" id="btn-atk">普攻</button>`;
+      const atkLabel = a.attackName || "普攻";
+      html += `<button type="button" class="btn btn-primary" id="btn-atk">${escapeHtml(atkLabel)}</button>`;
       const canSkill = a.mp >= a.skill.cost;
-      html += `<button type="button" class="btn" id="btn-skill" ${canSkill ? "" : "disabled"}>技能 · ${a.skill.name}（${a.skill.cost}）</button>`;
+      html += `<button type="button" class="btn" id="btn-skill" ${canSkill ? "" : "disabled"}>技能 · ${escapeHtml(a.skill.name)}（${a.skill.cost}）</button>`;
       html += `<span class="hint-inline">${escapeHtml(a.skill.desc)}</span>`;
     } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
       html += `<span class="hint-inline" style="margin-left:0">点选一个敌人</span>`;
@@ -743,13 +859,17 @@
   function unitCard(u, cls, isEnemy) {
     const hpPct = Math.max(0, (u.hp / u.maxHp) * 100);
     const mpPct = u.maxMp ? Math.max(0, (u.mp / u.maxMp) * 100) : 0;
+    const defShow = effectiveDef(u);
     let html = `<div class="${cls}" data-id="${u.id}">`;
-    html += `<div class="name">${escapeHtml(u.name)}<span class="role">${escapeHtml(u.role)}</span></div>`;
+    html += `<div class="name">${escapeHtml(u.name)}<span class="role">${escapeHtml(u.role || "")}</span></div>`;
+    if (!isEnemy && u.tagline) {
+      html += `<div class="tagline">${escapeHtml(u.tagline)}</div>`;
+    }
     html += `<div class="row">气血 <div class="bar"><i style="width:${hpPct}%"></i></div> ${u.hp}/${u.maxHp}</div>`;
     if (!isEnemy) {
       html += `<div class="row">内力 <div class="bar mp"><i style="width:${mpPct}%"></i></div> ${u.mp}/${u.maxMp}</div>`;
     }
-    html += `<div class="meta">攻 ${u.atk} · 速 ${u.spd}</div>`;
+    html += `<div class="meta">攻 ${u.atk} · 防 ${defShow} · 速 ${u.spd}</div>`;
     html += "</div>";
     return html;
   }
@@ -780,17 +900,8 @@
         state.pendingAction = "skill";
         if (a.id === "su") {
           state.combatPhase = "pickTargetHeal";
-        } else if (a.id === "tie") {
-          // 横扫无需选目标
-          const ok = doSkill(a, null);
-          renderCombat();
-          if (ok) setTimeout(finishActorTurn, 450);
-          else {
-            state.combatPhase = "pickAction";
-            renderCombat();
-          }
-          return;
         } else {
+          // 陆沉舟破风斩、铁无声开路：均需选单体敌人
           state.combatPhase = "pickTargetSkill";
         }
         renderCombat();
@@ -846,16 +957,26 @@
     state.combatPhase = null;
     if (won) {
       state.encounterDone = true;
-      const silverGain = 30 + rand(10, 40);
-      const expGain = 50 + rand(10, 30);
+      const n = state.fightSize || state.enemies.length;
+      const perExp = n >= 3 ? 30 : 20;
+      const silverGain = n >= 3 ? 12 : 8;
       state.silver += silverGain;
-      state.exp += expGain;
+      const levelNotes = [];
+      state.party.forEach((p) => {
+        if (alive(p)) {
+          levelNotes.push(...grantExpToAlly(p, perExp));
+        }
+      });
       updateTopbar();
+      let body = `<p>这一仗过了。经验、银两入袋。</p>
+         <p class="reward">银两 +${silverGain}　每名胜者经验 +${perExp}</p>
+         <p>当前银两 ${state.silver} · 队伍经验 ${state.exp}</p>`;
+      if (levelNotes.length) {
+        body += `<p>${levelNotes.map(escapeHtml).join("<br>")}</p>`;
+      }
       showModal(
         "胜利",
-        `<p>山贼溃逃，道路重开。</p>
-         <p class="reward">获得银两 +${silverGain}　经验 +${expGain}</p>
-         <p>当前银两 ${state.silver} · 经验 ${state.exp}</p>`,
+        body,
         "返回地图",
         () => {
           hideModal();
@@ -864,19 +985,33 @@
         }
       );
     } else {
+      state.silver = Math.max(0, state.silver - 2);
+      // 退回城口：复活并回满，保留等级与银两，遇敌可再战
+      state.party.forEach((p) => {
+        p.hp = p.maxHp;
+        p.mp = p.maxMp;
+        p.tempDef = 0;
+      });
+      state.px = PLAYER_START.x;
+      state.py = PLAYER_START.y;
+      state.encounterDone = false;
+      updateTopbar();
       showModal(
         "败北",
-        `<p>全员力竭……江湖路远，再试一次。</p>`,
-        "重新开始",
+        `<p>撑不住。先退回城口。</p>
+         <p>银两 ${state.silver}（此战 −2，不低于 0）</p>`,
+        "返回城口",
         () => {
           hideModal();
-          resetGame();
+          state.mode = "map";
+          renderMap();
         }
       );
     }
   }
 
-  function showModal(title, bodyHtml, btnText, onClick) {
+  function showModal(title, bodyHtml, btnText, onClick, extraClass) {
+    modal.className = "modal" + (extraClass ? " " + extraClass : "");
     modal.innerHTML = `<h2>${escapeHtml(title)}</h2>${bodyHtml}<br><button type="button" class="btn btn-primary" id="modal-btn">${escapeHtml(btnText)}</button>`;
     overlay.classList.remove("hidden");
     $("modal-btn").addEventListener("click", onClick);
@@ -884,7 +1019,27 @@
 
   function hideModal() {
     overlay.classList.add("hidden");
+    modal.className = "modal";
     modal.innerHTML = "";
+  }
+
+  function showOpening() {
+    const linesHtml =
+      '<div class="opening-lines">' +
+      OPENING_LINES.map((line) => `<p>${escapeHtml(line)}</p>`).join("") +
+      "</div>";
+    showModal(
+      "出城",
+      linesHtml,
+      "上路",
+      () => {
+        hideModal();
+        state.openingShown = true;
+        state.mode = "map";
+        renderMap();
+      },
+      "opening"
+    );
   }
 
   function resetGame() {
@@ -897,8 +1052,13 @@
     state.party = baseParty();
     state.enemies = [];
     state.log = [];
+    state.fightSize = 0;
     updateTopbar();
-    renderMap();
+    if (!state.openingShown) {
+      showOpening();
+    } else {
+      renderMap();
+    }
   }
 
   // 启动
