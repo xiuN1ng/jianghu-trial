@@ -577,7 +577,7 @@
     forest: {
       id: "forest",
       entrance: { x: 2, y: 4 },
-      blocked: new Set(["0,0", "4,0", "0,4", "4,4", "1,0", "3,0"]),
+      blocked: new Set(["0,0","1,0","3,0","4,0","0,1","1,1","3,1","4,1","0,3","1,3","3,3","4,3","0,4","1,4","3,4","4,4"]),
       encounter: { x: 2, y: 1 },
       hunter: { x: 0, y: 2 },
       gate: { x: 4, y: 2 },
@@ -586,7 +586,7 @@
     town: {
       id: "town",
       entrance: { x: 0, y: 2 },
-      blocked: new Set(["0,0", "4,0", "0,4", "4,4"]),
+      blocked: new Set(["0,0","1,0","2,0","3,0","4,0","0,1","1,1","3,1","4,1","0,3","1,3","3,3","4,3","0,4","1,4","3,4","4,4"]),
       shop: { x: 2, y: 2 },
       gossip: { x: 2, y: 1 },
       gateOut: { x: 4, y: 2 },
@@ -596,7 +596,7 @@
     mountain: {
       id: "mountain",
       entrance: { x: 2, y: 4 },
-      blocked: new Set(["0,0", "1,0", "3,0", "4,0", "0,4", "4,4", "0,1", "4,1"]),
+      blocked: new Set(["0,0","1,0","2,0","3,0","4,0","0,1","1,1","3,1","4,1","0,2","1,2","3,2","4,2","0,3","1,3","3,3","4,3","0,4","3,4","4,4"]),
       encounter: { x: 2, y: 1 },
       gateBack: { x: 1, y: 4 },
       hint: "山路狭险 · 刀疤客拦路 · 西侧可回城 · 败则退回入口",
@@ -873,6 +873,11 @@
           p.level = s.level; p.exp = s.exp; p.tempDef = 0;
         });
       }
+      if (!isWalkable(state.px, state.py)) {
+        var m = MAPS[state.mapId];
+        state.px = m.entrance.x;
+        state.py = m.entrance.y;
+      }
       return true;
     } catch (e) { return false; }
   }
@@ -884,6 +889,10 @@
       state.px = pos.x;
       state.py = pos.y;
     } else if (pos !== false) {
+      state.px = m.entrance.x;
+      state.py = m.entrance.y;
+    }
+    if (!isWalkable(state.px, state.py)) {
       state.px = m.entrance.x;
       state.py = m.entrance.y;
     }
