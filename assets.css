@@ -7,8 +7,12 @@
 .cell.walk { background-image: url("assets/tiles/walk.svg"); }
 .cell.obstacle { background-image: url("assets/tiles/pine.svg"); }
 .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
-.cell.player { background-image: url("assets/tiles/player.svg"); }
 .cell.town { background-image: url("assets/tiles/town.svg"); }
+.cell.gate { background-image: url("assets/tiles/walk.svg"); }
+.cell.player {
+  background-image: url("assets/tiles/player.svg");
+  opacity: 1;
+}
 
 .unit .portrait {
   width: 48px;
