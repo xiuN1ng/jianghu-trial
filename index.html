@@ -180,8 +180,9 @@
 
   /* —— 地图格 5×5 —— */
   .cell {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
+    font-size: 0;
     border: 1px solid rgba(90, 74, 58, 0.45);
     background: var(--earth);
     display: flex;
@@ -261,7 +262,7 @@
   .map-wrap { text-align: center; }
   .map {
     display: grid;
-    grid-template-columns: repeat(5, 64px);
+    grid-template-columns: repeat(5, 56px);
     gap: 0;
     margin: 0 auto 12px;
     width: fit-content;
@@ -381,6 +382,7 @@
     width: 64px;
     height: 86px;
     object-fit: cover;
+    object-position: 50% 16%;
     flex-shrink: 0;
     border: 1px solid var(--border);
   }
@@ -522,6 +524,7 @@
     .topbar { flex-wrap: wrap; }
   }
 </style>
+<link rel="stylesheet" href="assets.css">
 </head>
 <body>
   <div id="app">
@@ -716,9 +719,6 @@
     return "assets/portrait-bandit.jpg";
   }
 
-  const TILE_PINE = '<svg class="ico-pine" viewBox="0 0 40 48" aria-hidden="true"><path fill="#354530" d="M20 1c2 5 8 10 12 16-4 0-7 1-8 3 5 3 11 8 13 15-5-1-9 0-12 2 6 4 10 9 12 15H3c2-6 6-11 12-15-3-2-7-3-12-2 2-7 8-12 13-15-1-2-4-3-8-3C12 11 18 6 20 1z"/><rect x="18" y="38" width="4" height="9" fill="#3a3228"/></svg>';
-  const TILE_LANTERN = '<svg class="ico-lantern" viewBox="0 0 28 40" aria-hidden="true"><rect x="11" y="1" width="6" height="4" rx="0.5" fill="#6b1c16"/><path fill="#b83a2e" d="M5 7h18l-2.2 18H7.2z"/><path fill="#e8b85a" opacity="0.45" d="M10 10h8l-1 12h-6z"/><rect x="12" y="25" width="4" height="6" fill="#6b1c16"/><path d="M14 31v6" stroke="#6b1c16" stroke-width="1.4" fill="none"/><circle cx="14" cy="38" r="1.2" fill="#c44536"/></svg>';
-
   // ——— 地图 ———
   function renderMap() {
     updateTopbar();
@@ -741,18 +741,7 @@
         }
         if (isPlayer) classes.push("player");
 
-        let inner = "";
-        if (isPlayer) {
-          inner = '<img class="token" src="assets/portrait-lu.jpg" alt="">';
-        } else if (!isWalkable(x, y)) {
-          inner = TILE_PINE;
-        } else if (isEnc && state.encounterDone) {
-          inner = '<span class="stamp">已</span>';
-        } else if (isEnc) {
-          inner = TILE_LANTERN;
-        }
-
-        html += `<div class="${classes.join(" ")}" data-x="${x}" data-y="${y}">${inner}</div>`;
+        html += `<div class="${classes.join(" ")}" data-x="${x}" data-y="${y}"></div>`;
       }
     }
     html += "</div>";
