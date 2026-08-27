@@ -8,6 +8,7 @@
 .cell.obstacle { background-image: url("assets/tiles/pine.svg"); }
 .cell.encounter { background-image: url("assets/tiles/encounter.svg"); }
 .cell.town { background-image: url("assets/tiles/town.svg"); }
+.cell.gossip { background-image: url("assets/tiles/gossip.svg"); }
 .cell.gate { background-image: url("assets/tiles/walk.svg"); }
 .cell.player {
   background-image: url("assets/tiles/player.svg");
@@ -31,3 +32,11 @@
   object-position: 50% 16%;
   flex-shrink: 0;
 }
+
+.fx-float{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:700;pointer-events:none;animation:fx-pop 700ms ease-out forwards;text-shadow:0 1px 0 #f3ead8;z-index:2}
+.fx-float.dmg{color:#c44536}
+.fx-float.heal{color:#3d6b8c}
+@keyframes fx-pop{0%{opacity:1;top:8px}100%{opacity:0;top:-18px}}
+.unit{position:relative}
+.unit.hit{animation:fx-hit 180ms ease-in}
+@keyframes fx-hit{0%{filter:brightness(1.4)}40%{transform:translateX(3px)}100%{filter:none;transform:none}}
