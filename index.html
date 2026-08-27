@@ -218,10 +218,8 @@
 
   .map-wrap { text-align: center; }
   .map {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 0;
+    position: relative;
+    display: block;
     margin: 0 auto 12px;
     width: min(560px, 100%);
     aspect-ratio: 4 / 3;
@@ -230,10 +228,40 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    overflow: hidden;
   }
-  .map.forest { background-image: url("assets/scenes/scene-forest-road.jpg?v=s3"); }
-  .map.town { background-image: url("assets/scenes/scene-town-street.jpg?v=s3"); }
-  .map.mountain { background-image: url("assets/scenes/scene-mountain-pass.jpg?v=s3"); }
+  .map.forest { background-image: url("assets/scenes/scene-forest-poi.jpg?v=poi1"); }
+  .map.town { background-image: url("assets/scenes/scene-town-poi.jpg?v=poi1"); }
+  .map.mountain { background-image: url("assets/scenes/scene-mountain-poi.jpg?v=poi1"); }
+  .hotspot {
+    position: absolute;
+    box-sizing: border-box;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    border-radius: 3px;
+  }
+  .hotspot:hover {
+    border-color: rgba(184, 134, 11, 0.95);
+    background: rgba(243, 234, 216, 0.14);
+  }
+  .hotspot.locked:hover {
+    border-color: rgba(90, 74, 58, 0.55);
+    background: rgba(42, 36, 32, 0.08);
+  }
+  .scene-nav {
+    text-align: center;
+    margin: -4px 0 8px;
+  }
+  .scene-nav button {
+    background: none;
+    border: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+  }
+  .scene-nav button:hover { color: var(--ink); }
   .map .cell {
     width: auto;
     height: auto;
@@ -576,31 +604,32 @@
   const MAPS = {
     forest: {
       id: "forest",
-      entrance: { x: 2, y: 4 },
-      blocked: new Set(["0,0","1,0","3,0","4,0","0,1","1,1","3,1","4,1","0,3","1,3","3,3","4,3","0,4","1,4","3,4","4,4"]),
-      encounter: { x: 2, y: 1 },
-      hunter: { x: 0, y: 2 },
-      gate: { x: 4, y: 2 },
-      hint: "点击相邻格移动 · 西侧猎户 · 林中遇敌 · 除贼后东口通城",
+      enterHint: "官道入林，青石还湿。西边有炊烟。",
+      hotspots: [
+        { id: "hunter", left: 8, top: 48, w: 22, h: 30, label: "猎户" },
+        { id: "bandit", left: 40, top: 42, w: 16, h: 32, label: "拦路刀客" },
+        { id: "gate", left: 72, top: 18, w: 24, h: 24, label: "通城" }
+      ]
     },
     town: {
       id: "town",
-      entrance: { x: 0, y: 2 },
-      blocked: new Set(["0,0","1,0","2,0","3,0","4,0","0,1","1,1","3,1","4,1","0,3","1,3","3,3","4,3","0,4","1,4","3,4","4,4"]),
-      shop: { x: 2, y: 2 },
-      gossip: { x: 2, y: 1 },
-      gateOut: { x: 4, y: 2 },
-      gateBack: { x: 0, y: 2 },
-      hint: "城镇歇脚 · 药铺买药 · 北侧茶摊听闲话 · 东口通山路",
+      enterHint: "石板镇，药香混着打铁声。",
+      hotspots: [
+        { id: "herb", left: 22, top: 36, w: 16, h: 24, label: "药铺" },
+        { id: "blade", left: 40, top: 38, w: 14, h: 24, label: "铁铺" },
+        { id: "tea", left: 62, top: 64, w: 22, h: 28, label: "茶摊" },
+        { id: "gateOut", left: 78, top: 28, w: 18, h: 22, label: "通山" },
+        { id: "gateBack", left: 2, top: 48, w: 16, h: 30, label: "回林道" }
+      ]
     },
     mountain: {
       id: "mountain",
-      entrance: { x: 2, y: 4 },
-      blocked: new Set(["0,0","1,0","2,0","3,0","4,0","0,1","1,1","3,1","4,1","0,2","1,2","3,2","4,2","0,3","1,3","3,3","4,3","0,4","3,4","4,4"]),
-      encounter: { x: 2, y: 1 },
-      gateBack: { x: 1, y: 4 },
-      hint: "山路狭险 · 刀疤客拦路 · 西侧可回城 · 败则退回入口",
-    },
+      enterHint: "路窄了。北坡风硬，那刀疤多半在前头。",
+      hotspots: [
+        { id: "chief", left: 38, top: 30, w: 22, h: 38, label: "刀疤客" },
+        { id: "pass", left: 44, top: 8, w: 20, h: 18, label: "过关" }
+      ]
+    }
   };
 
   const OPENING_LINES = [
@@ -709,8 +738,8 @@
   const state = {
     mode: "map",
     mapId: "forest",
-    px: MAPS.forest.entrance.x,
-    py: MAPS.forest.entrance.y,
+    px: 0,
+    py: 0,
     encounterDone: false,
     eliteDone: false,
     chapterClear: false,
@@ -873,32 +902,27 @@
           p.level = s.level; p.exp = s.exp; p.tempDef = 0;
         });
       }
-      if (!isWalkable(state.px, state.py)) {
-        var m = MAPS[state.mapId];
-        state.px = m.entrance.x;
-        state.py = m.entrance.y;
-      }
       return true;
     } catch (e) { return false; }
   }
 
-  function enterMap(mapId, pos) {
+  function enterMap(mapId) {
     state.mapId = mapId;
-    const m = MAPS[mapId];
-    if (pos && typeof pos.x === "number") {
-      state.px = pos.x;
-      state.py = pos.y;
-    } else if (pos !== false) {
-      state.px = m.entrance.x;
-      state.py = m.entrance.y;
-    }
-    if (!isWalkable(state.px, state.py)) {
-      state.px = m.entrance.x;
-      state.py = m.entrance.y;
-    }
     state.mode = "map";
     renderMap();
     saveGame();
+  }
+
+  function hotspotVisible(h) {
+    if (h.id === "bandit" && state.encounterDone) return false;
+    if (h.id === "chief" && state.eliteDone) return false;
+    if (h.id === "pass" && !state.eliteDone) return false;
+    return true;
+  }
+
+  function hotspotLocked(h) {
+    if (h.id === "gate" && !state.encounterDone) return true;
+    return false;
   }
 
   function renderMap() {
@@ -906,62 +930,15 @@
     const m = currentMap();
     let html = '<div class="map-wrap">';
     html += '<div class="map ' + state.mapId + '" aria-label="场景">';
-    for (let y = 0; y < MAP_SIZE; y++) {
-      for (let x = 0; x < MAP_SIZE; x++) {
-        const classes = ["cell"];
-        const isPlayer = x === state.px && y === state.py;
-        const walk = isWalkable(x, y);
-        if (!walk && m.blocked.has(key(x, y))) {
-          classes.push("obstacle");
-        } else if (!walk) {
-          classes.push("obstacle");
-        } else {
-          classes.push("walk");
-          if (isAdjacent(x, y)) classes.push("adjacent");
-
-          if (m.encounter && x === m.encounter.x && y === m.encounter.y) {
-            if (state.mapId === "forest") {
-              classes.push("encounter");
-              if (state.encounterDone) classes.push("done");
-            } else if (state.mapId === "mountain") {
-              classes.push("encounter");
-              if (state.eliteDone) classes.push("done");
-            }
-          }
-          if (m.shop && x === m.shop.x && y === m.shop.y) {
-            classes.push("town");
-          }
-          if (m.gossip && x === m.gossip.x && y === m.gossip.y) {
-            classes.push("gossip");
-          }
-          if (state.mapId === "forest" && m.gate && x === m.gate.x && y === m.gate.y && state.encounterDone) {
-            classes.push("gate");
-          }
-          if (state.mapId === "town" && m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
-            classes.push("gate");
-          }
-          if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
-            classes.push("gate");
-          }
-        }
-        if (isPlayer) classes.push("player");
-        const isPoi = walk && ((m.encounter && x === m.encounter.x && y === m.encounter.y && !((state.mapId==="forest"&&state.encounterDone)||(state.mapId==="mountain"&&state.eliteDone)))
-            || (m.hunter && x === m.hunter.x && y === m.hunter.y)
-            || (m.shop && x === m.shop.x && y === m.shop.y)
-            || (m.gossip && x === m.gossip.x && y === m.gossip.y)
-            || (m.gate && x === m.gate.x && y === m.gate.y && (state.mapId!=="forest" || state.encounterDone))
-            || (m.gateOut && x === m.gateOut.x && y === m.gateOut.y)
-            || (m.gateBack && x === m.gateBack.x && y === m.gateBack.y));
-        if (isPoi) classes.push("poi");
-        let inner = "";
-        if (isPlayer) inner = '<img class="pawn" src="assets/portraits/lu-chenzhou.png" alt="">';
-        html += '<div class="' + classes.join(" ") + '" data-x="' + x + '" data-y="' + y + '">' + inner + '</div>';
-      }
-    }
+    (m.hotspots || []).forEach(function (h) {
+      if (!hotspotVisible(h)) return;
+      const locked = hotspotLocked(h);
+      html += '<button type="button" class="hotspot' + (locked ? " locked" : "") + '" data-id="' + h.id + '" title="' + escapeHtml(h.label) + '" style="left:' + h.left + '%;top:' + h.top + '%;width:' + h.w + '%;height:' + h.h + '%"></button>';
+    });
     html += "</div>";
-    html += '<p class="hint">' + escapeHtml(m.hint || "点击相邻格移动") + "</p>";
-    if (state.mapId === "forest" && state.encounterDone) {
-      html += '<p class="hint" style="margin-top:8px">林道已清。东侧城口已开，可前往城镇。</p>';
+    html += '<p class="hint">' + escapeHtml(m.enterHint || "") + "</p>";
+    if (state.mapId === "mountain") {
+      html += '<div class="scene-nav"><button type="button" id="nav-back">折回城镇</button></div>';
     }
     if (state.chapterClear) {
       html += '<p class="hint" style="margin-top:8px">本回试炼已过。刷新页面可重开。</p>';
@@ -983,80 +960,55 @@
     html += "</div></div></div>";
     view.innerHTML = html;
 
-    view.querySelectorAll(".cell.adjacent").forEach((el) => {
-      el.addEventListener("click", () => {
-        moveTo(+el.dataset.x, +el.dataset.y);
-      });
+    view.querySelectorAll(".hotspot").forEach(function (el) {
+      el.addEventListener("click", function () { onHotspot(el.dataset.id); });
+    });
+    var back = document.getElementById("nav-back");
+    if (back) back.addEventListener("click", function () {
+      enterMap("town");
+      showToast("折回城镇。", "继续");
     });
   }
 
-  function moveTo(x, y) {
-    if (!isAdjacent(x, y) || state.mode !== "map") return;
-    state.px = x;
-    state.py = y;
-    const m = currentMap();
-
+  function onHotspot(id) {
+    if (state.mode !== "map") return;
     if (state.mapId === "forest") {
-      if (m.hunter && x === m.hunter.x && y === m.hunter.y) {
-        renderMap();
-        showHunterDialogue();
-        return;
-      }
-      if (m.encounter && x === m.encounter.x && y === m.encounter.y && !state.encounterDone) {
-        startCombat("forest");
-        return;
-      }
-      if (m.gate && x === m.gate.x && y === m.gate.y) {
+      if (id === "hunter") { showHunterDialogue(); return; }
+      if (id === "bandit") { if (!state.encounterDone) startCombat("forest"); return; }
+      if (id === "gate") {
         if (state.encounterDone) {
           state.townUnlocked = true;
-          enterMap("town", MAPS.town.entrance);
+          enterMap("town");
           showToast("出了林道，官道尽头是城镇。", "进城");
-          return;
+        } else {
+          showToast("林中尚有贼影，官道未开。", "知道了");
         }
-        renderMap();
-        showToast("林中尚有贼影，官道未开。", "知道了");
         return;
       }
     }
-
     if (state.mapId === "town") {
-      if (m.shop && x === m.shop.x && y === m.shop.y) {
-        renderMap();
-        showShopDialogue();
-        return;
-      }
-      if (m.gossip && x === m.gossip.x && y === m.gossip.y) {
-        renderMap();
-        showGossipDialogue();
-        return;
-      }
-      if (m.gateOut && x === m.gateOut.x && y === m.gateOut.y) {
+      if (id === "herb") { showHerbShop(); return; }
+      if (id === "blade") { showBladeShop(); return; }
+      if (id === "tea") { showGossipDialogue(); return; }
+      if (id === "gateOut") {
         state.mountainUnlocked = true;
-        enterMap("mountain", MAPS.mountain.entrance);
+        enterMap("mountain");
         showToast("出东口，山路渐陡。", "上路");
         return;
       }
-      if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
-        enterMap("forest", MAPS.forest.gate);
+      if (id === "gateBack") {
+        enterMap("forest");
         showToast("折回林道。", "继续");
         return;
       }
     }
-
     if (state.mapId === "mountain") {
-      if (m.encounter && x === m.encounter.x && y === m.encounter.y && !state.eliteDone && !state.chapterClear) {
-        renderMap();
-        maybeEliteIntroThenFight();
-        return;
-      }
-      if (m.gateBack && x === m.gateBack.x && y === m.gateBack.y) {
-        enterMap("town", MAPS.town.gateOut);
-        showToast("折回城镇。", "继续");
+      if (id === "chief") { if (!state.eliteDone && !state.chapterClear) maybeEliteIntroThenFight(); return; }
+      if (id === "pass") {
+        showToast("路开了。本回试炼已过。", "收刀");
         return;
       }
     }
-
-    renderMap();
   }
 
   function showGossipDialogue() {
@@ -1091,20 +1043,18 @@
     });
   }
 
-  function showShopDialogue() {
+  function showHerbShop() {
     const lines =
       '<p class="dialogue-line">掌柜：「伤药八两一包。刀钝了？隔壁铁铺。」</p>' +
       '<p class="dialogue-line">苏：「药要新的。过期的我认得。」</p>' +
       '<p class="dialogue-line">掌柜：「……姑娘好眼力。」</p>' +
       '<div class="shop-actions">' +
       '<button type="button" class="btn btn-primary" id="buy-heal">伤药 8两</button>' +
-      '<button type="button" class="btn" id="buy-blade"' + (state.boughtBlade ? " disabled" : "") + ">利刃 12两</button>" +
       '<button type="button" class="btn" id="shop-leave">离开</button>' +
       "</div>";
     modal.className = "modal";
     modal.innerHTML = "<h2>城镇·药铺</h2>" + lines;
     overlay.classList.remove("hidden");
-
     $("buy-heal").addEventListener("click", () => {
       if (state.silver < 8) {
         showToast("银两不够。伤药要八两。", "知道了");
@@ -1117,8 +1067,25 @@
       updateTopbar();
       hideModal();
       renderMap();
+      saveGame();
       showToast("伤药入喉，众人气血各回五十。", "继续");
     });
+    $("shop-leave").addEventListener("click", () => {
+      hideModal();
+      renderMap();
+    });
+  }
+
+  function showBladeShop() {
+    const lines =
+      '<p class="dialogue-line">铁匠把锤子搁下：「十二两。磨快了，本回够用。」</p>' +
+      '<div class="shop-actions">' +
+      '<button type="button" class="btn btn-primary" id="buy-blade"' + (state.boughtBlade ? " disabled" : "") + ">利刃 12两</button>" +
+      '<button type="button" class="btn" id="shop-leave">离开</button>' +
+      "</div>";
+    modal.className = "modal";
+    modal.innerHTML = "<h2>城镇·铁铺</h2>" + lines;
+    overlay.classList.remove("hidden");
     $("buy-blade").addEventListener("click", () => {
       if (state.boughtBlade) return;
       if (state.silver < 12) {
@@ -1131,6 +1098,7 @@
       updateTopbar();
       hideModal();
       renderMap();
+      saveGame();
       showToast("利刃过手，本回全员攻击+2。", "继续");
     });
     $("shop-leave").addEventListener("click", () => {
@@ -1668,9 +1636,6 @@
     } else {
       state.silver = Math.max(0, state.silver - 2);
       restorePartyFull();
-      const ent = currentMap().entrance;
-      state.px = ent.x;
-      state.py = ent.y;
       updateTopbar();
       state.mode = "map";
       renderMap();
@@ -1735,8 +1700,8 @@
   function resetGame() {
     state.mode = "map";
     state.mapId = "forest";
-    state.px = MAPS.forest.entrance.x;
-    state.py = MAPS.forest.entrance.y;
+    state.px = 0;
+    state.py = 0;
     state.encounterDone = false;
     state.eliteDone = false;
     state.chapterClear = false;
