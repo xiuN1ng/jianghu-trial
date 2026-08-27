@@ -334,6 +334,26 @@
   }
   .modal .reward { color: var(--gold); font-weight: 700; }
   .modal .btn { margin-top: 12px; display: block; margin-left: auto; margin-right: auto; }
+
+  .toast {
+    display: none;
+    position: sticky;
+    bottom: 0;
+    margin-top: 10px;
+    width: 100%;
+    background: var(--log-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .toast.show { display: flex; }
+  .toast .toast-msg { flex: 1; line-height: 1.5; }
+  .toast .btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -346,6 +366,10 @@
       </div>
     </div>
     <div id="view"></div>
+    <div id="toast" class="toast" hidden>
+      <span class="toast-msg" id="toast-msg"></span>
+      <button type="button" class="btn btn-primary" id="toast-btn">回地图</button>
+    </div>
   </div>
 
   <div id="overlay" class="overlay hidden">
@@ -974,15 +998,12 @@
       if (levelNotes.length) {
         body += `<p>${levelNotes.map(escapeHtml).join("<br>")}</p>`;
       }
-      showModal(
-        "胜利",
-        body,
-        "返回地图",
-        () => {
-          hideModal();
-          state.mode = "map";
-          renderMap();
-        }
+      state.mode = "map";
+      renderMap();
+      showToast(
+        `这一仗过了。经验、银两入袋。　银两 +${silverGain}　经验 +${perExp}` +
+          (levelNotes.length ? "　" + levelNotes.join("；") : ""),
+        "继续"
       );
     } else {
       state.silver = Math.max(0, state.silver - 2);
@@ -996,18 +1017,30 @@
       state.py = PLAYER_START.y;
       state.encounterDone = false;
       updateTopbar();
-      showModal(
-        "败北",
-        `<p>撑不住。先退回城口。</p>
-         <p>银两 ${state.silver}（此战 −2，不低于 0）</p>`,
-        "返回城口",
-        () => {
-          hideModal();
-          state.mode = "map";
-          renderMap();
-        }
-      );
+      state.mode = "map";
+      renderMap();
+      showToast(`撑不住。先退回城口。　银两 ${state.silver}`, "回城口");
     }
+  }
+
+
+  function showToast(msg, btnText) {
+    const el = $("toast");
+    $("toast-msg").textContent = msg;
+    $("toast-btn").textContent = btnText || "继续";
+    el.classList.add("show");
+    el.hidden = false;
+    const btn = $("toast-btn");
+    const done = () => {
+      hideToast();
+    };
+    btn.onclick = done;
+  }
+
+  function hideToast() {
+    const el = $("toast");
+    el.classList.remove("show");
+    el.hidden = true;
   }
 
   function showModal(title, bodyHtml, btnText, onClick, extraClass) {
