@@ -40,8 +40,8 @@
     forest: {
       ally: {
         lu:  { left: 6, top: 52, w: 10, h: 22 },
-        su:  { left: 2, top: 70, w: 10, h: 22 },
-        tie: { left: 14, top: 70, w: 10, h: 22 }
+        su:  { left: 2, top: 62, w: 10, h: 22 },
+        tie: { left: 14, top: 62, w: 10, h: 22 }
       },
       foe: [
         { left: 48, top: 46, w: 10, h: 22 },
@@ -52,8 +52,8 @@
     mountain: {
       ally: {
         lu:  { left: 8, top: 58, w: 10, h: 22 },
-        su:  { left: 4, top: 76, w: 10, h: 22 },
-        tie: { left: 16, top: 76, w: 10, h: 22 }
+        su:  { left: 4, top: 62, w: 10, h: 22 },
+        tie: { left: 16, top: 62, w: 10, h: 22 }
       },
       foe: [
         { left: 42, top: 22, w: 12, h: 28 }
