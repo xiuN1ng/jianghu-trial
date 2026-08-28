@@ -55,7 +55,7 @@
     const lines =
       '<p class="dialogue-line">茶客：「北坡那刀疤，第一刀试你，第二刀才要命。」</p>' +
       '<p class="dialogue-line">苏：「你怎么知道？」</p>' +
-      '<p class="dialogue-line">茶客：「活着回来的人，都这么说。喏，碎银四两，当我买你们去探探。」</p>';
+      '<p class="dialogue-line">茶客：「活着回来的人，都这么说。唧，碎银四两，当我买你们去探探。」</p>';
     showModal("城镇·茶摊", lines, "收下", function () {
       hideModal();
       state.gossipDone = true;
@@ -118,7 +118,7 @@
       '<p class="dialogue-line">铁：「磨。钝刀会误事。」</p>' +
       '<p class="dialogue-line">铁匠：「人倒痛快。」</p>' +
       '<div class="shop-actions">' +
-      '<button type="button" class="btn btn-primary" id="buy-blade"' + (state.boughtBlade ? " disabled" : "") + ">利刃 12两</button>' +
+      '<button type="button" class="btn btn-primary" id="buy-blade"' + (state.boughtBlade ? " disabled" : "") + '>利刃 12两</button>' +
       '<button type="button" class="btn" id="shop-leave">离开</button>' +
       "</div>";
     modal.className = "modal";
