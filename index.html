@@ -7,132 +7,33 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--paper:#f3ead8;--paper-dark:#e6d9c2;--ink:#2a2420;--ink-muted:#6b5e52;--border:#8a7a68;--gold:#b8860b;--hp:#c44536;--hp-bg:#e8d4ce;--mp:#3d6b8c;--mp-bg:#d4e0e8;--encounter:#c44536;--obstacle:#5a6b4a;--walk:#f7f1e6;--player:#2a2420;--btn:#e8dcc8;--btn-hover:#dccfb8;--btn-primary:#5c4033;--btn-primary-text:#f3ead8;--btn-disabled:#cfc4b4;--log-bg:#ebe2d2;--cinnabar:#c44536;--earth:#efe4d0;--earth-bright:#f6efe2;--moss:#c5cbb0}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Noto Serif SC","Songti SC","Source Han Serif SC",serif;background:linear-gradient(180deg,rgba(22,16,12,.58) 0%,rgba(12,9,7,.72) 100%),url("assets/bg-mountain-path.jpg") center/cover no-repeat fixed;color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
-#app{position:relative;width:100%;max-width:720px;background:var(--paper);padding:22px 26px 18px;border:2px solid #2a2420;box-shadow:inset 0 0 0 1px #c9b89a,inset 0 0 0 5px var(--paper),inset 0 0 0 6px #2a2420,0 22px 56px rgba(8,6,4,.48);overflow:hidden}
-#app::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.09;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(42,36,32,.22) 2px,rgba(42,36,32,.22) 3px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(42,36,32,.12) 3px,rgba(42,36,32,.12) 4px)}
-#app>*{position:relative;z-index:1}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;gap:12px}
-.topbar .brand{display:flex;align-items:center;gap:10px}
-.topbar .seal{width:44px;height:44px;object-fit:cover;transform:rotate(-8deg);border:1px solid rgba(139,30,30,.45);box-shadow:0 1px 4px rgba(90,18,12,.25);flex-shrink:0}
-.topbar h1{font-size:22px;font-weight:700;letter-spacing:.18em;font-family:inherit}
-.topbar .stats{font-size:13px;color:var(--ink-muted);white-space:nowrap}
-.topbar .stats b{color:var(--gold)}
-.topbar .phase{font-size:12px;color:var(--ink-muted);margin-left:10px}
-#view{min-height:360px}
-.btn{background:var(--btn);color:var(--ink);border:1px solid var(--border);border-radius:3px;padding:8px 16px;font-size:14px;font-family:inherit;cursor:pointer}
-.btn:hover:not(:disabled){background:var(--btn-hover)}
-.btn-primary{background:var(--btn-primary);color:var(--btn-primary-text);border-color:var(--btn-primary)}
-.btn-primary:hover:not(:disabled){background:#4a3328;border-color:#4a3328}
-.btn:disabled{background:var(--btn-disabled);color:var(--ink-muted);cursor:not-allowed}
-.bar{height:7px;border-radius:1px;border:1px solid var(--border);overflow:hidden;background:var(--hp-bg);flex:1}
-.bar.mp{background:var(--mp-bg)}
-.bar>i{display:block;height:100%;background:var(--hp);transition:width .25s}
-.bar.mp>i{background:var(--mp)}
-.cell{width:56px;height:56px;font-size:0;color:transparent;border:1px solid rgba(90,74,58,.45);background-size:56px 56px;background-repeat:no-repeat;background-position:center;display:flex;align-items:center;justify-content:center;cursor:default;user-select:none;position:relative}
-.cell.walk{background-image:url("assets/tiles/walk.svg")}
-.cell.obstacle{background-image:url("assets/tiles/pine.svg")}
-.cell.encounter{background-image:url("assets/tiles/encounter.svg")}
-.cell.encounter.done{background-image:url("assets/tiles/walk.svg");opacity:.85}
-.cell.town{background-image:url("assets/tiles/town.svg")}
-.cell.gossip{background-image:url("assets/tiles/gossip.svg")}
-.cell.gate{background-image:url("assets/tiles/walk.svg");box-shadow:inset 0 0 0 2px rgba(184,134,11,.55)}
-.cell.player{background-image:url("assets/tiles/player.svg");opacity:1}
-.cell.walk.adjacent,.cell.gate.adjacent,.cell.town.adjacent,.cell.encounter.adjacent{cursor:pointer;box-shadow:inset 0 0 0 2px #8a7a68}
-.cell.walk.adjacent:hover,.cell.gate.adjacent:hover,.cell.town.adjacent:hover,.cell.encounter.adjacent:hover{box-shadow:inset 0 0 0 2px #b8860b}
-.map-wrap{text-align:center}
-.map{position:relative;display:block;margin:0 auto 12px;width:min(560px,100%);aspect-ratio:4/3;border:2px solid var(--ink);box-shadow:0 2px 10px rgba(42,36,32,.12);background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}
-.map.forest{background-image:url("assets/scenes/scene-forest-poi.jpg?v=poi1")}
-.map.town{background-image:url("assets/scenes/scene-town-poi.jpg?v=poi1")}
-.map.mountain{background-image:url("assets/scenes/scene-mountain-poi.jpg?v=poi1")}
-.hotspot{position:absolute;box-sizing:border-box;padding:0;margin:0;appearance:none;-webkit-appearance:none;background:transparent;color:transparent;font-size:0;cursor:pointer;border:1.5px solid transparent;border-radius:3px}
-.hotspot:hover{border-color:rgba(184,134,11,.95);background:rgba(243,234,216,.14)}
-.hotspot.locked:hover{border-color:rgba(90,74,58,.55);background:rgba(42,36,32,.08)}
-.scene-nav{text-align:center;margin:-4px 0 8px}
-.scene-nav button{background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:12px;letter-spacing:.08em;padding:4px 8px}
-.scene-nav button:hover{color:var(--ink)}
-.map .cell{width:auto;height:auto;background-image:none!important;background-color:transparent;border-color:transparent;font-size:0;box-shadow:none}
-.map .cell.obstacle{background:rgba(20,24,16,.12)!important;pointer-events:none}
-.map .cell.adjacent{cursor:pointer;box-shadow:inset 0 0 0 2px rgba(184,134,11,.9);background:rgba(243,234,216,.16)!important}
-.map .cell.adjacent:hover{background:rgba(243,234,216,.28)!important}
-.map .cell.poi::after{content:"";width:10px;height:10px;border-radius:50%;background:#c44536;box-shadow:0 0 0 2px #f3ead8}
-.map .cell.poi.town::after,.map .cell.poi.shop::after{background:#8a2e24}
-.map .cell.poi.gossip::after{background:#b8860b}
-.map .cell.poi.gate::after{background:#4a6b3a}
-.map .cell.player::after{display:none}
-.map .pawn{width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:50% 16%;border:2px solid #f3ead8;box-shadow:0 1px 6px rgba(0,0,0,.45);pointer-events:none;z-index:2}
-.hint{font-size:12px;color:var(--ink-muted);text-align:center;margin-top:4px;letter-spacing:.04em}
-.party-strip{text-align:left;margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
-.party-strip h3{font-size:12px;color:var(--ink-muted);margin-bottom:8px;font-weight:600;letter-spacing:.2em}
-.party-row{display:flex;gap:8px}
-.party-card{flex:1;min-width:0;display:flex;gap:8px;background:var(--paper-dark);border:1px solid var(--border);padding:6px}
-.party-card .portrait{width:48px;height:64px;object-fit:cover;object-position:50% 16%;flex-shrink:0;border:1px solid var(--border)}
-.party-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
-.party-card .pn{font-weight:700;font-size:13px;line-height:1.3}
-.party-card .pn .role{font-weight:400;font-size:11px;color:var(--ink-muted);margin-left:2px}
-.party-card .pt{color:var(--ink-muted);font-size:10px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 4px}
-.party-card .row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-muted);margin-top:2px}
-.combat{display:flex;flex-direction:column;gap:8px}
-.map.fighting .turn{position:absolute;top:0;left:0;right:0;z-index:5;margin:0;padding:6px 10px;border-bottom:none;background:rgba(243,234,216,.86);font-size:13px;letter-spacing:.06em}
-.map.fighting .actions{position:absolute;bottom:0;left:0;right:0;z-index:5;padding:6px 8px 8px;background:rgba(243,234,216,.86);min-height:36px}
-.map.fighting .unit{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;margin:0;padding:0;background:transparent;border:none;box-shadow:none;cursor:default}
-.map.fighting .unit .sprite{position:relative;width:48px;height:64px;flex-shrink:0}
-.map.fighting .unit .portrait{width:48px;height:64px;object-fit:cover;object-position:50% 16%;border:1px solid var(--border);box-shadow:0 1px 6px rgba(0,0,0,.45)}
-.map.fighting .unit .name{font-size:11px;font-weight:700;margin:0;color:var(--ink);text-shadow:0 1px 0 #f3ead8;line-height:1.2;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.map.fighting .unit .name .role{display:none}
-.map.fighting .unit .row{width:48px;margin:0;font-size:0;gap:0}
-.map.fighting .unit .row .bar{height:4px;flex:1}
-.map.fighting .unit .meta,.map.fighting .unit .row.mp-row{display:none}
-.fx-float{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:700;pointer-events:none;animation:fx-pop 700ms ease-out forwards;text-shadow:0 1px 0 #f3ead8;z-index:2}
-.fx-float.dmg{color:#c44536}
-.fx-float.heal{color:#3d6b8c}
-@keyframes fx-pop{0%{opacity:1;top:8px}100%{opacity:0;top:-18px}}
-.unit.hit{animation:fx-hit 180ms ease-in}
-@keyframes fx-hit{0%{filter:brightness(1.4)}40%{transform:translateX(3px)}100%{filter:none;transform:none}}
-.unit.active{outline:2px solid var(--cinnabar);outline-offset:1px}
-.unit.selectable{cursor:pointer;outline:1px dashed rgba(184,134,11,.95);outline-offset:1px}
-.unit.selectable:hover{outline-color:#b8860b}
-.unit.down{opacity:.42;filter:grayscale(1)}
-.log{background:var(--log-bg);border:1px solid var(--border);border-radius:2px;height:88px;overflow:auto;padding:8px 10px;font-size:12px;line-height:1.6;color:var(--ink)}
-.log p{margin:0}
-.log .sys,.log .dim{color:var(--ink-muted)}
-.log .dmg{color:var(--hp)}
-.log .heal{color:var(--mp)}
-.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:36px}
-.actions .hint-inline{font-size:12px;color:var(--ink-muted);margin-left:auto}
-.overlay{position:fixed;inset:0;background:rgba(18,12,8,.55);display:flex;align-items:center;justify-content:center;padding:24px;z-index:20}
-.overlay.hidden{display:none}
-.modal{background:var(--paper);border:2px solid var(--ink);box-shadow:inset 0 0 0 1px #c9b89a,inset 0 0 0 4px var(--paper),inset 0 0 0 5px #2a2420,0 12px 36px rgba(8,6,4,.4);border-radius:0;padding:22px 26px 18px;text-align:left;max-width:420px;width:min(420px,92vw);position:relative}
-.modal.opening{text-align:left;max-width:460px;padding:28px 32px 22px}
-.modal h2{font-size:1.05rem;letter-spacing:.28em;margin-bottom:14px;color:var(--ink);font-weight:700}
-.modal p{margin-bottom:8px;font-size:.95rem;line-height:1.75}
-.modal .opening-lines p{margin-bottom:10px;font-size:14px;line-height:1.9;letter-spacing:.06em;color:var(--ink)}
-.modal .reward{color:var(--gold);font-weight:700}
-.modal .btn{margin-top:12px}
-.modal .shop-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.modal .dialogue-line{margin-bottom:10px;font-size:14px;line-height:1.85;letter-spacing:.04em}
-.toast{display:none;position:sticky;bottom:0;margin-top:10px;width:100%;background:var(--log-bg);border:1px solid var(--border);border-radius:2px;padding:10px 12px;font-size:13px;color:var(--ink);align-items:center;justify-content:space-between;gap:12px}
-.toast.show{display:flex}
-.toast .toast-msg{flex:1;line-height:1.5}
-.toast .btn{flex-shrink:0;padding:6px 12px;font-size:12px}
-@media (max-width:640px){.party-row{flex-direction:column}.topbar{flex-wrap:wrap}}
-</style>
+<link rel="stylesheet" href="game-a.css?v=fight1">
+<link rel="stylesheet" href="game-b.css?v=fight1">
 <link rel="stylesheet" href="assets.css">
 </head>
 <body>
-<div id="app">
-<div class="topbar"><div class="brand"><img class="seal" src="assets/ui-title-seal.jpg" alt="試煉"><h1>江湖试炼</h1></div>
-<div class="stats">银两 <b id="silver">0</b>　经验 <b id="exp">0</b><span class="phase" id="phase-label">林道</span></div></div>
-<div id="view"></div>
-<div id="toast" class="toast" hidden><span class="toast-msg" id="toast-msg"></span><button type="button" class="btn btn-primary" id="toast-btn">回地图</button></div>
-</div>
-<div id="overlay" class="overlay hidden"><div class="modal" id="modal"></div></div>
-<script>
-(function(){
-"use strict";
-const MAP_SIZE=5;
-const MAP_NAMES={forest:"林道",town:"城镇",mountain:"山路"};
-const MAPS={forest:{id:"forest",enterHint:"官道入林，青石还湿。西边有炊烟。",hotspots:[{id:"hunter",left:5,top:52,w:18,h:32,label:"猎户"},{id:"bandit",left:50,top:46,w:12,h:26,label:"拦路刀客"},{id:"gate",left:78,top:6,w:18,h:20,label:"通城"}]},town:{id:"town",enterHint:"石板镇，药香混着打铁声。",hotspots:[{id:"gateBack",left:0,top:22,w:18,h:42,label:"回林道"},{id:"herb",left:26,top:38,w:16,h:26,label:"药铺"},{id:"blade",left:54,top:40,w:14,h:24,label:"铁铺"},{id:"tea",left:58,top:66,w:24,h:30,label:"茶摊"},{id:"gateOut",left:86,top:26,w:14,h:20,label:"通山"}]},mountain:{id:"mountain",enterHint:"路窄了。北坡风硬，那刀疤多半在前头。",hotspots:[{id:"chief",left:42,top:22,w:16,h:48,label:"刀疤客"},{id:"pass",left:48,top:0,w:12,h:16,label:"过关"},{id:"gateBack",left:38,top:78,w:24,h:18,label:"折回城镇"}]}};
-const COMBAT_SLOTS={forest:{ally:{lu:{left:6,top:52,w:10,h:22},su:{left:2,top:70,w:10,h:22},tie:{left:14,top:70,w:10,h:22}},foe:[{left:48,top:46,w:10,h:22},{left:60,top:50,w:10,h:22},{left:54,top:38,w:10,h:22}]},mountain:{ally:{lu:{left:8,top:58,w:10,h:22},su:{left:4,top:76,w:10,h:22},tie:{left:16,top:76,w:10,h:22}},foe:[{left:42,top:22,w:12,h:28}]}};
+  <div id="app">
+    <div class="topbar">
+      <div class="brand">
+        <img class="seal" src="assets/ui-title-seal.jpg" alt="試煉">
+        <h1>江湖试炼</h1>
+      </div>
+      <div class="stats">
+        银两 <b id="silver">0</b>　经验 <b id="exp">0</b>
+        <span class="phase" id="phase-label">林道</span>
+      </div>
+    </div>
+    <div id="view"></div>
+    <div id="toast" class="toast" hidden>
+      <span class="toast-msg" id="toast-msg"></span>
+      <button type="button" class="btn btn-primary" id="toast-btn">回地图</button>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay hidden">
+    <div class="modal" id="modal"></div>
+  </div>
+
+<script src="boot.js?v=fight1"></script>
+</body>
+</html>
