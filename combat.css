@@ -1,0 +1,37 @@
+/* combat field: scene backdrop, party left / foes right */
+.combat-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 2px solid var(--ink);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+.combat-field.forest { background-image: url("assets/scenes/scene-forest-poi.jpg?v=poi1"); }
+.combat-field.mountain { background-image: url("assets/scenes/scene-mountain-poi.jpg?v=poi1"); }
+.combat-field .stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 10px 10px 14px;
+  gap: 8px;
+}
+.combat-field .side {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  width: 46%;
+}
+.combat-field .side.foe { align-items: flex-end; }
+.combat-field .side h2 { display: none; }
+.combat-field .unit {
+  background: rgba(243, 234, 216, 0.88);
+  box-shadow: 0 1px 8px rgba(42, 36, 32, 0.28);
+  margin-bottom: 0;
+  width: 100%;
+  max-width: 220px;
+}
+.combat-field .side.foe .unit { margin-left: auto; }
