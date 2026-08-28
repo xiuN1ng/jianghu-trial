@@ -91,8 +91,8 @@
       html += '<button type="button" class="btn btn-primary" id="btn-atk">普攻</button>';
       const can1 = a.mp >= a.skill1.cost;
       const can2 = a.mp >= a.skill2.cost;
-      html += '<button type="button" class="btn" id="btn-skill1" ' + (can1 ? "" : "disabled") + ">技能1 · " + escapeHtml(a.skill1.name) + "（" + a.skill1.cost + "）</button>';
-      html += '<button type="button" class="btn" id="btn-skill2" ' + (can2 ? "" : "disabled") + ">技能2 · " + escapeHtml(a.skill2.name) + "（" + a.skill2.cost + "）</button>';
+      html += '<button type="button" class="btn" id="btn-skill1"' + (can1 ? '' : ' disabled') + '>技能1 · ' + escapeHtml(a.skill1.name) + '（' + a.skill1.cost + '）</button>';
+      html += '<button type="button" class="btn" id="btn-skill2"' + (can2 ? '' : ' disabled') + '>技能2 · ' + escapeHtml(a.skill2.name) + '（' + a.skill2.cost + '）</button>';
       html += '<span class="hint-inline">' + escapeHtml(a.skill1.desc) + " ／ " + escapeHtml(a.skill2.desc) + "</span>";
     } else if (state.combatPhase === "pickTarget" || state.combatPhase === "pickTargetSkill") {
       html += '<span class="hint-inline" style="margin-left:0">点选一个敌人</span>';
